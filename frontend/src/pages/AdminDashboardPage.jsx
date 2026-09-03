@@ -98,7 +98,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
         username: newTeamUsername,
         password: newTeamPassword,
       });
-      setMessage({ type: 'success', text: `Team node '${newTeamName}' registered successfully!` });
+      setMessage({ type: 'success', text: `Team '${newTeamName}' registered successfully!` });
       setNewTeamName('');
       setNewTeamUsername('');
       setNewTeamPassword('');
@@ -180,7 +180,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                 Administrator Orchestrator Console
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                Stage manager, team nodes control, and live secret editor.
+                Stage manager, teams control, and live secret editor.
               </p>
             </div>
 
@@ -217,7 +217,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
           <div className="flex flex-wrap gap-2.5">
             {[
               { id: 'stage', label: 'Stage Manager & Timer' },
-              { id: 'teams', label: `Team Nodes (${participants.length})` },
+              { id: 'teams', label: `Teams (${participants.length})` },
               { id: 'secrets', label: 'Live Secret Editor' },
               { id: 'logs', label: `Submissions Stream (${submissions.length})` },
             ].map((tab) => (
@@ -266,9 +266,9 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                     onChange={(e) => setTargetRound(Number(e.target.value))}
                     className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-300 font-bold text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:bg-white"
                   >
-                    <option value={1}>Round 1: Password Extraction (Lvl 1–5)</option>
-                    <option value={2}>Round 2: Phrase Extraction (Lvl 6–9)</option>
-                    <option value={3}>Round 3: Forced Output (Lvl 10–12)</option>
+                    <option value={1}>Round 1: Password Extraction (Lvl 1ï¿½5)</option>
+                    <option value={2}>Round 2: Phrase Extraction (Lvl 6ï¿½9)</option>
+                    <option value={3}>Round 3: Forced Output (Lvl 10ï¿½12)</option>
                   </select>
                   <p className="text-xs text-slate-500">
                     Advancing rounds unlocks beginning levels for contestant teams.
@@ -373,7 +373,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
               <form onSubmit={handleCreateTeam} className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-4">
                 <span className="font-display font-bold text-sm text-slate-900 flex items-center gap-2">
                   <Plus className="w-4 h-4 text-brand-blue" />
-                  <span>Register New Team Node</span>
+                  <span>Register New Team</span>
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -404,7 +404,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                   type="submit"
                   className="w-full py-3 bg-brand-blue hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow-md transition-colors"
                 >
-                  Create Team Node
+                  Create Team
                 </button>
               </form>
 
@@ -469,7 +469,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
             <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-5">
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5 uppercase tracking-wider">
-                  Select Level Node to Update
+                  Select Level to Update
                 </label>
                 <select
                   value={selectedLevelId}
@@ -555,7 +555,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                   >
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
                       <span className="font-bold text-slate-900">
-                        {sub.team_name} — Level {sub.level_id} (Attempt #{sub.attempt_number})
+                        {sub.team_name} ï¿½ Level {sub.level_id} (Attempt #{sub.attempt_number})
                       </span>
                       <span>{sub.created_at?.replace('T', ' ').substring(0, 19)}</span>
                     </div>

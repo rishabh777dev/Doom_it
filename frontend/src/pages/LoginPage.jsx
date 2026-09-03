@@ -45,7 +45,7 @@ export default function LoginPage() {
             <Shield className="w-6 h-6 stroke-[2.5]" />
           </div>
           <h2 className="font-display font-extrabold text-2xl text-slate-900">
-            Team Node Sign In
+            Team Sign In
           </h2>
           <p className="text-xs text-slate-500 font-medium">
             Enter your team credentials to access the adversarial arena.
@@ -85,7 +85,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••••"
+              placeholder="Enter team password"
               className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-300 font-medium text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:bg-white transition-all"
             />
           </div>
@@ -113,7 +113,7 @@ export default function LoginPage() {
             {loading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Authenticating Node...</span>
+                <span>Authenticating Team...</span>
               </>
             ) : (
               <>
@@ -125,8 +125,9 @@ export default function LoginPage() {
         </form>
 
         <div className="pt-2 text-center text-xs text-slate-400">
-          <Link to="/" className="hover:text-slate-700 underline">
-            ? Return to Main Page
+          <Link to="/" className="hover:text-slate-700 underline inline-flex items-center gap-1.5 transition-colors">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Return to Main Page</span>
           </Link>
         </div>
 

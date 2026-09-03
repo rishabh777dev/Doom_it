@@ -131,7 +131,7 @@ export default function LeaderboardPage({ user }) {
               <thead>
                 <tr className="border-b-2 border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   <th className="py-3 px-3">Rank</th>
-                  <th className="py-3 px-3">Team Node</th>
+                  <th className="py-3 px-3">Team Name</th>
                   <th className="py-3 px-3 text-center">Round</th>
                   <th className="py-3 px-3 text-center">Levels Solved</th>
                   <th className="py-3 px-3 text-right">Total Score</th>
@@ -157,7 +157,7 @@ export default function LeaderboardPage({ user }) {
                         </span>
                         {isCurrent && (
                           <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-blue-600 text-white uppercase font-bold">
-                            Your Node
+                            Your Team
                           </span>
                         )}
                       </td>

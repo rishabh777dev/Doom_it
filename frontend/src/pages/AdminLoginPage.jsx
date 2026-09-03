@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
             Admin Console Sign In
           </h2>
           <p className="text-xs text-slate-500 font-medium">
-            Restricted orchestrator node for Vakya-Bhed 2026.
+            Restricted orchestrator portal for Vakya-Bhed 2026.
           </p>
         </div>
 
@@ -84,7 +84,7 @@ export default function AdminLoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••••"
+              placeholder="Enter admin secret key"
               className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-300 font-medium text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:bg-white transition-all"
             />
           </div>
@@ -124,8 +124,9 @@ export default function AdminLoginPage() {
         </form>
 
         <div className="pt-2 text-center text-xs text-slate-400">
-          <Link to="/" className="hover:text-slate-700 underline">
-            ? Return to Public Site
+          <Link to="/" className="hover:text-slate-700 underline inline-flex items-center gap-1.5 transition-colors">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Return to Public Site</span>
           </Link>
         </div>
 

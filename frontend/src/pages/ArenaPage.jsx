@@ -420,7 +420,7 @@ export default function ArenaPage({ user }) {
                       {level?.title || 'Marvel Sentinel'}
                     </h3>
                     <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-brand-blue border border-blue-200">
-                      Node {level?.level_id ? String(level.level_id).padStart(2, '0') : '01'} • Round {level?.round_id || 1}
+                      Level {level?.level_id ? String(level.level_id).padStart(2, '0') : '01'} • Round {level?.round_id || 1}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 font-medium">
@@ -647,7 +647,7 @@ export default function ArenaPage({ user }) {
                   type="text"
                   value={capturedPassword}
                   onChange={(e) => setCapturedPassword(e.target.value.toUpperCase())}
-                  placeholder="e.g. ARC_REACTOR"
+                  placeholder="e.g. CIPHER_TOKEN_XYZ"
                   disabled={isVerifying || isViewingArchived}
                   className={`w-full p-3 rounded-2xl border-2 font-mono uppercase text-sm font-bold placeholder-slate-300 focus:outline-none transition-all ${
                     shakeFlagInput

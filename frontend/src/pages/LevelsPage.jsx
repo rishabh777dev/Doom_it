@@ -74,10 +74,10 @@ export default function LevelsPage({ user }) {
             Challenge Roadmap
           </span>
           <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-slate-900 mt-2">
-            12 Adversarial Level Nodes
+            12 Adversarial Challenge Levels
           </h1>
           <p className="text-sm text-slate-500 font-medium">
-            Live database nodes loaded directly from your Supabase cluster.
+            12 Live challenge levels loaded directly from Supabase.
           </p>
         </div>
 
@@ -85,10 +85,10 @@ export default function LevelsPage({ user }) {
           {stats && (
             <>
               <div className="px-4 py-2 rounded-2xl bg-white border border-slate-300 shadow-sm text-xs font-bold text-slate-700">
-                ?? Total Score: <span className="text-brand-blue text-sm">{stats.total_score} pts</span>
+                ⭐ Total Score: <span className="text-brand-blue text-sm">{stats.total_score} pts</span>
               </div>
               <div className="px-4 py-2 rounded-2xl bg-white border border-slate-300 shadow-sm text-xs font-bold text-slate-700">
-                ? Solved: <span className="text-emerald-600 text-sm">{stats.levels_solved_count} / 12</span>
+                ✓ Solved: <span className="text-emerald-600 text-sm">{stats.levels_solved_count} / 12</span>
               </div>
             </>
           )}
@@ -96,7 +96,7 @@ export default function LevelsPage({ user }) {
             onClick={loadData}
             disabled={loading}
             className="p-2.5 rounded-2xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 shadow-sm transition-all"
-            title="Refresh Nodes"
+            title="Refresh Levels"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -144,7 +144,7 @@ export default function LevelsPage({ user }) {
                         {/* Badge status */}
                         <div className="flex items-center justify-between mb-3">
                           <span className="font-display font-extrabold text-xs uppercase tracking-wider text-slate-500">
-                            Node {lvl.level_id < 10 ? `0${lvl.level_id}` : lvl.level_id}
+                            Level {lvl.level_id < 10 ? `0${lvl.level_id}` : lvl.level_id}
                           </span>
 
                           {detail.solved ? (

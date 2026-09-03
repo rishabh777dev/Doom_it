@@ -26,7 +26,7 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
         </div>
 
         <h2 className="text-2xl font-display font-black text-slate-900 mb-1">
-          {solvedLevel?.title || 'Node Guardian'} Overridden!
+          {solvedLevel?.title || 'Level Guardian'} Overridden!
         </h2>
         <p className="text-sm text-slate-600 mb-6">
           You successfully cracked the secret credentials and compromised the sector's defense protocols.
@@ -51,14 +51,14 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Next Target Node</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Next Challenge Level</span>
               <p className="text-sm font-bold text-slate-900 truncate">{nextLevel.title}</p>
               <p className="text-xs text-slate-500 truncate">{nextLevel.objective}</p>
             </div>
           </div>
         ) : (
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 mb-6">
-            <p className="text-sm font-bold text-emerald-800">🏆 All Sector Nodes in this round cleared!</p>
+            <p className="text-sm font-bold text-emerald-800">🏆 All Challenge Levels in this round cleared!</p>
           </div>
         )}
 
