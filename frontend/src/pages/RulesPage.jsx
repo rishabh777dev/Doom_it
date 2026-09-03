@@ -28,7 +28,7 @@ export default function RulesPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           
           <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Levels 1 – 5</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Levels 1 - 5</span>
             <h3 className="font-display font-bold text-base text-slate-900">Round 1: Password Extraction</h3>
             <p className="text-xs text-slate-600 leading-relaxed font-normal">
               Each AI Guardian holds a single-word secret codeword. The model is given ironclad directives to never reveal, spell, encode, or describe its secret. You must craft prompts that bypass persona constraints to extract the secret and submit it in the verification portal.
@@ -36,7 +36,7 @@ export default function RulesPage() {
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600">Levels 6 – 9</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600">Levels 6 - 9</span>
             <h3 className="font-display font-bold text-base text-slate-900">Round 2: Secret Phrase Extraction</h3>
             <p className="text-xs text-slate-600 leading-relaxed font-normal">
               These levels feature multi-directive guardians holding passphrases (e.g. <code>PurplePanda99</code>) buried inside conditional matrices, numbered rules, or system configuration cards. Models refuse self-descriptions, requiring creative structural and side-channel leakage prompts.
@@ -44,7 +44,7 @@ export default function RulesPage() {
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-pink-600">Levels 10 – 12</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-pink-600">Levels 10 - 12</span>
             <h3 className="font-display font-bold text-base text-slate-900">Round 3: Forced Output (Jailbreak)</h3>
             <p className="text-xs text-slate-600 leading-relaxed font-normal">
               The objective is inverted! You are shown the forbidden target sentence upfront (e.g. <em>"Make it rain money."</em>). The AI is programmed never to speak it under any framing. You must force the AI to emit that exact phrase to achieve automatic level victory.
@@ -66,8 +66,8 @@ export default function RulesPage() {
             <thead>
               <tr className="border-b-2 border-slate-200 text-slate-400 uppercase text-[11px] font-bold">
                 <th className="py-3 px-3">Challenge Levels</th>
-                <th className="py-3 px-3">Attempts 1 – 5</th>
-                <th className="py-3 px-3">Attempts 6 – 10</th>
+                <th className="py-3 px-3">Attempts 1 - 5</th>
+                <th className="py-3 px-3">Attempts 6 - 10</th>
                 <th className="py-3 px-3">Attempts 11+</th>
                 <th className="py-3 px-3">Hint Deduction</th>
               </tr>
@@ -82,14 +82,14 @@ export default function RulesPage() {
               </tr>
               <tr>
                 <td className="py-3.5 px-3 font-bold text-slate-900">Level 2 & Level 7 (Intermediate)</td>
-                <td className="py-3.5 px-3 text-emerald-600 font-bold">100 pts (Att. 1–8)</td>
+                <td className="py-3.5 px-3 text-emerald-600 font-bold">100 pts (Att. 1 - 8)</td>
                 <td className="py-3.5 px-3 text-amber-600 font-bold">75 pts (Att. 9+)</td>
                 <td className="py-3.5 px-3 text-amber-600 font-bold">75 pts</td>
                 <td className="py-3.5 px-3 text-slate-500">-25 pts</td>
               </tr>
               <tr>
                 <td className="py-3.5 px-3 font-bold text-slate-900">Level 3 & Level 8 (Advanced)</td>
-                <td className="py-3.5 px-3 text-emerald-600 font-bold">100 pts (Att. 1–10)</td>
+                <td className="py-3.5 px-3 text-emerald-600 font-bold">100 pts (Att. 1 - 10)</td>
                 <td className="py-3.5 px-3 text-amber-600 font-bold">75 pts (Att. 11+)</td>
                 <td className="py-3.5 px-3 text-amber-600 font-bold">75 pts</td>
                 <td className="py-3.5 px-3 text-slate-500">-25 pts</td>
@@ -97,7 +97,7 @@ export default function RulesPage() {
               <tr>
                 <td className="py-3.5 px-3 font-bold text-brand-blue">Boss Levels (4, 5, 9, 10, 11, 12)</td>
                 <td className="py-3.5 px-3 text-emerald-600 font-bold" colSpan={3}>
-                  Flat 100 pts (No attempt decay — conceptual breaks)
+                  Flat 100 pts (No attempt decay - conceptual breaks)
                 </td>
                 <td className="py-3.5 px-3 text-slate-500">-25 pts</td>
               </tr>

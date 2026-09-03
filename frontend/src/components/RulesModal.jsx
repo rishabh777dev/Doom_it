@@ -44,19 +44,19 @@ export default function RulesModal({ isOpen, onClose }) {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Levels 1 – 5</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Levels 1 - 5</span>
                 <h4 className="font-display font-bold text-slate-900 text-sm">Round 1: Password</h4>
                 <p className="text-xs text-slate-500">Extract hidden single-word secret keys protected by persona and roleplay defenses.</p>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Levels 6 – 9</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Levels 6 - 9</span>
                 <h4 className="font-display font-bold text-slate-900 text-sm">Round 2: Secret Phrase</h4>
                 <p className="text-xs text-slate-500">Surface passphrases buried inside conditional rules, numbered directives, and sanitized system cards.</p>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-pink-600">Levels 10 – 12</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-pink-600">Levels 10 - 12</span>
                 <h4 className="font-display font-bold text-slate-900 text-sm">Round 3: Forced Output</h4>
                 <p className="text-xs text-slate-500">Force the model to speak a strictly forbidden target sentence verbatim to trigger automatic level win!</p>
               </div>
@@ -70,7 +70,7 @@ export default function RulesModal({ isOpen, onClose }) {
               <span>Scoring Rules</span>
             </h3>
             <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm text-slate-600 pl-2">
-              <li><strong>Attempt Tiering:</strong> Early solves grant maximum score. For Levels 1 & 6: Attempts 1–5 earn 100 pts, attempts 6–10 earn 75 pts, and attempts 11+ earn 50 pts.</li>
+              <li><strong>Attempt Tiering:</strong> Early solves grant maximum score. For Levels 1 & 6: Attempts 1 - 5 earn 100 pts, attempts 6 - 10 earn 75 pts, and attempts 11+ earn 50 pts.</li>
               <li><strong>Boss Levels (4, 5, 9, 10, 11, 12):</strong> Flat 100 points upon solving.</li>
               <li><strong>Hint Penalty:</strong> Revealing a level hint will deduct <strong>25 points</strong> from that level upon completion.</li>
             </ul>

@@ -58,7 +58,7 @@ export default function LandingPage({ user, timerState }) {
                 Tiered Attempt Scoring
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Early solves earn maximum points. For Levels 1 & 6: 1–5 attempts award 100 pts, 6–10 award 75 pts, and 11+ award 50 pts. Concept/Boss levels (4, 5, 9, 10, 11, 12) award a flat 100 points.
+                Early solves earn maximum points. For Levels 1 & 6: 1 - 5 attempts award 100 pts, 6 - 10 award 75 pts, and 11+ award 50 pts. Concept/Boss levels (4, 5, 9, 10, 11, 12) award a flat 100 points.
               </p>
             </div>
 

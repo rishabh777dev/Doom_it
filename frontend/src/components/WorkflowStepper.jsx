@@ -47,7 +47,7 @@ export default function WorkflowStepper({ onOpenArena, onOpenRules, timerState }
 
                   <div>
                     <div className="text-xs font-semibold text-sky-400 uppercase tracking-wider mb-0.5">
-                      {currentRound === 1 ? 'Round 1 — Password Extraction' : currentRound === 2 ? 'Round 2 — Phrase Extraction' : 'Round 3 — Forced Output'}
+                      {currentRound === 1 ? 'Round 1: Password Extraction' : currentRound === 2 ? 'Round 2: Phrase Extraction' : 'Round 3: Forced Output'}
                     </div>
                     <h3 className="font-display font-extrabold text-xl sm:text-2xl text-white tracking-tight">
                       {currentRound === 1 ? 'The Vault Guardians' : currentRound === 2 ? 'Instruction Guardians' : 'Forbidden Output Jailbreak'}

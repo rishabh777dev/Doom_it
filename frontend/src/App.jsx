@@ -135,7 +135,7 @@ function AppContent() {
               <div className="w-6 h-6 rounded-lg bg-brand-blue text-white flex items-center justify-center font-bold text-[10px]">
                 VB
               </div>
-              <span>Vakya-Bhed 2026 — AI Safety & Adversarial CTF Arena</span>
+              <span>Vakya-Bhed 2026 | AI Safety & Adversarial CTF Arena</span>
             </div>
 
             <div className="flex items-center gap-6">

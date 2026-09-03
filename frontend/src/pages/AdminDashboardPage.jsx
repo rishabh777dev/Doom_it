@@ -266,9 +266,9 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                     onChange={(e) => setTargetRound(Number(e.target.value))}
                     className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-300 font-bold text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:bg-white"
                   >
-                    <option value={1}>Round 1: Password Extraction (Lvl 1�5)</option>
-                    <option value={2}>Round 2: Phrase Extraction (Lvl 6�9)</option>
-                    <option value={3}>Round 3: Forced Output (Lvl 10�12)</option>
+                    <option value={1}>Round 1: Password Extraction (Lvl 1 - 5)</option>
+                    <option value={2}>Round 2: Phrase Extraction (Lvl 6-9)</option>
+                    <option value={3}>Round 3: Forced Output (Lvl 10 - 12)</option>
                   </select>
                   <p className="text-xs text-slate-500">
                     Advancing rounds unlocks beginning levels for contestant teams.
@@ -555,7 +555,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                   >
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
                       <span className="font-bold text-slate-900">
-                        {sub.team_name} � Level {sub.level_id} (Attempt #{sub.attempt_number})
+                        {sub.team_name} | Level {sub.level_id} (Attempt #{sub.attempt_number})
                       </span>
                       <span>{sub.created_at?.replace('T', ' ').substring(0, 19)}</span>
                     </div>
