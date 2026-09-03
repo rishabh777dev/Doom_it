@@ -7,11 +7,11 @@ from typing import List, Optional, Tuple
 from backend.config import settings
 from backend.llm_provider import (
     GeminiLLMProvider,
+    GroqLLMProvider,
+    OpenRouterLLMProvider,
     LevelContext,
     LLMProvider,
     MockLLMProvider,
-    NvidiaLLMProvider,
-    OllamaLLMProvider,
 )
 
 logger = logging.getLogger("vakyabhed.llm_router")
@@ -23,35 +23,28 @@ PROVIDER_COOLDOWN_SECONDS = 30.0
 
 _mock_provider = MockLLMProvider()
 
-# Providers are instantiated once so the shared HTTP pool and the Ollama
-# semaphore are actually shared instead of re-created per submission.
+# Providers are instantiated once so the shared HTTP pool is actually shared
 _provider_chain: Optional[List[LLMProvider]] = None
 
 # provider name -> unix timestamp until which it is considered unhealthy
 _cooldowns: dict = {}
 
 def get_provider_chain() -> List[LLMProvider]:
-    """Providers in fallback priority order, or exclusively Ollama if restricted."""
+    """Three-tier Cloud Fallback: Gemini (5 keys) -> Groq (LPU) -> OpenRouter (Free OSS)"""
     global _provider_chain
     if _provider_chain is None:
-        nvidia = NvidiaLLMProvider()
-        ollama = OllamaLLMProvider()
         gemini = GeminiLLMProvider()
+        groq = GroqLLMProvider()
+        openrouter = OpenRouterLLMProvider()
         
         pref = (settings.PRIMARY_PROVIDER or "gemini").lower().strip()
-        if pref in ("gemini", "default"):
-            # Priority 1: Google Gemini (with PK1, PK2, PK3 instant failover)
-            # Priority 2: NVIDIA Nemotron 3 Ultra (Cloud Fallback)
-            # Priority 3: Local Ollama Llama 3 Cluster (Local Fallback)
-            _provider_chain = [gemini, nvidia, ollama]
-        elif pref == "nvidia":
-            _provider_chain = [nvidia, gemini, ollama]
-        elif pref == "ollama":
-            _provider_chain = [ollama, gemini, nvidia]
-        elif pref in ("ollama_only", "only_ollama", "ollama-only"):
-            _provider_chain = [ollama]
+        if pref == "groq":
+            _provider_chain = [groq, gemini, openrouter]
+        elif pref in ("openrouter", "nvidia"):
+            _provider_chain = [openrouter, gemini, groq]
         else:
-            _provider_chain = [gemini, nvidia, ollama]
+            # Default: Gemini (5 keys) -> Groq -> OpenRouter
+            _provider_chain = [gemini, groq, openrouter]
     return _provider_chain
 
 

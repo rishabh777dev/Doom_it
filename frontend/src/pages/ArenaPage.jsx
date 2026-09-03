@@ -403,46 +403,46 @@ export default function ArenaPage({ user }) {
           {/* ======================================================== */}
           {/* LEFT COLUMN: CONVERSATIONAL CHAT INTERFACE (8 COLS)     */}
           {/* ======================================================== */}
-          <div className="lg:col-span-8 flex flex-col bg-white rounded-3xl border-2 border-slate-900 shadow-card overflow-hidden h-[730px]">
+          <div className="lg:col-span-8 flex flex-col bg-white rounded-3xl border-2 border-slate-900 shadow-card overflow-hidden h-[580px] sm:h-[660px] lg:h-[730px]">
 
             {/* Chat Header */}
-            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-              <div className="flex items-center gap-3.5">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+              <div className="flex items-center gap-2.5 sm:gap-3.5">
                 <div className="relative">
-                  <div className="w-11 h-11 rounded-2xl bg-slate-900 text-sky-400 flex items-center justify-center font-bold shadow-sm">
-                    <Bot className="w-6 h-6" />
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-slate-900 text-sky-400 flex items-center justify-center font-bold shadow-sm shrink-0">
+                    <Bot className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
                 </div>
 
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-display font-bold text-base text-slate-900">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <h3 className="font-display font-bold text-sm sm:text-base text-slate-900 truncate max-w-[160px] sm:max-w-none">
                       {level?.title || 'Marvel Sentinel'}
                     </h3>
-                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-brand-blue border border-blue-200">
-                      Level {level?.level_id ? String(level.level_id).padStart(2, '0') : '01'} • Round {level?.round_id || 1}
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-brand-blue border border-blue-200 shrink-0">
+                      Level {level?.level_id ? String(level.level_id).padStart(2, '0') : '01'} • R{level?.round_id || 1}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-500 font-medium">
-                    Active Defense Link • Multiverse Sentinel Protocol
+                  <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">
+                    Active Defense Link • Sentinel Protocol
                   </p>
                 </div>
               </div>
 
               {/* Top Controls: Archives Dropdown & Refresh */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* Level Archives Selector */}
                 {allLevels.length > 1 && (
                   <div className="relative">
                     <select
                       value={selectedLevelId || level.level_id}
                       onChange={(e) => loadLevelData(Number(e.target.value))}
-                      className="text-xs font-bold py-1.5 pl-3 pr-7 bg-white border border-slate-300 rounded-xl text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-blue cursor-pointer"
+                      className="text-xs font-bold py-1.5 pl-2.5 pr-6 sm:pr-7 bg-white border border-slate-300 rounded-xl text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-blue cursor-pointer max-w-[150px] sm:max-w-[220px] truncate"
                     >
                       {allLevels.map((lvl) => (
                         <option key={lvl.level_id} value={lvl.level_id}>
-                          Node {lvl.level_id}: {lvl.title} {lvl.level_id === activeLevel?.level_id ? '(Active)' : ''}
+                          Level {lvl.level_id}: {lvl.title} {lvl.level_id === activeLevel?.level_id ? '(Active)' : ''}
                         </option>
                       ))}
                     </select>
@@ -451,7 +451,7 @@ export default function ArenaPage({ user }) {
 
                 <button
                   onClick={() => loadLevelData(selectedLevelId)}
-                  className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
+                  className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
                   title="Refresh Conversation"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -460,7 +460,7 @@ export default function ArenaPage({ user }) {
             </div>
 
             {/* Chat Message Stream */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/50">
+            <div className="flex-1 p-3.5 sm:p-6 overflow-y-auto space-y-3 sm:space-y-4 bg-slate-50/50">
               {messages.map((msg, idx) => {
                 const isUser = msg.role === 'user';
                 return (

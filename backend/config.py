@@ -34,20 +34,10 @@ class Settings(BaseSettings):
     # Default to local SQLite file for development
     DATABASE_URL: str = "sqlite:///./vakya_bhed.db"
 
-    # LLM Routing Priority (Options: "ollama_only", "ollama", "nvidia", "gemini")
-    PRIMARY_PROVIDER: str = "ollama_only"
+    # LLM Routing Priority (Options: "gemini", "groq", "openrouter")
+    PRIMARY_PROVIDER: str = "gemini"
 
-    # Ollama LLM Settings
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3"
-    OLLAMA_MAX_CONCURRENT_REQUESTS: int = 2
-
-    # NVIDIA Nemotron Settings
-    NVIDIA_API_KEY: str = ""
-    NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
-    NVIDIA_MODEL: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
-
-    # Google Gemini Settings (Multi-Key Pool PK1..PK5 with instant failover)
+    # 1. Google Gemini Settings (Primary Multi-Key Pool PK1..PK5 with instant failover)
     GEMINI_API_KEY: str = ""
     GEMINI_API_KEY_1: str = ""
     GEMINI_API_KEY_2: str = ""
@@ -57,14 +47,20 @@ class Settings(BaseSettings):
     GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta"
     GEMINI_MODEL: str = "gemini-3.1-flash-lite"
 
-    # Ollama Cluster Nodes (round-robin load balanced by OllamaLLMProvider).
-    # Set LLAMA_NODE_1..5 to the base URLs of each Ollama worker machine.
-    # Any node left blank is skipped.  If ALL are blank, falls back to OLLAMA_BASE_URL.
-    LLAMA_NODE_1: str = "http://127.0.0.1:11434"
-    LLAMA_NODE_2: str = ""
-    LLAMA_NODE_3: str = ""
-    LLAMA_NODE_4: str = ""
-    LLAMA_NODE_5: str = ""
+    # 2. Groq Settings (Secondary Ultra-Fast Cloud Fallback)
+    GROQ_API_KEY: str = ""
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+
+    # 3. OpenRouter Settings (Tertiary Free Cloud Fallback)
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct:free"
+
+    # Backward compatibility alias for existing NVIDIA env keys
+    NVIDIA_API_KEY: str = ""
+    NVIDIA_BASE_URL: str = "https://openrouter.ai/api/v1"
+    NVIDIA_MODEL: str = "meta-llama/llama-3.3-70b-instruct:free"
 
     # Rate Limiting
     SUBMISSION_COOLDOWN_SECONDS: int = 0

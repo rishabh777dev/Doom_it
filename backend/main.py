@@ -105,26 +105,9 @@ async def database_health_check():
         }
     raise HTTPException(status_code=503, detail="Failed to connect to Supabase")
 
-def _llama_nodes() -> List[tuple]:
-    """Configured Ollama worker nodes as (label, base_url) pairs.
-    Must stay in sync with OllamaLLMProvider._get_nodes() so the health
-    dashboard shows exactly the nodes that actually receive traffic."""
-    nodes = []
-    for i in range(1, 6):
-        node_url = getattr(settings, f"LLAMA_NODE_{i}", "").strip().rstrip("/")
-        if node_url:
-            nodes.append((f"Llama Node {i}", node_url))
-    if not nodes and settings.OLLAMA_BASE_URL:
-        nodes.append(("Llama Node 1 (Default)", settings.OLLAMA_BASE_URL.rstrip("/")))
-    return nodes
-
-
 @app.get("/api/health/providers")
 async def get_providers_health():
-    """
-    Probe every upstream concurrently. Sequential probes stacked up to ~9s of
-    timeouts, which is longer than the admin dashboard is willing to wait.
-    """
+    """Probe every active LLM cloud upstream (Gemini, Groq, OpenRouter, Supabase) concurrently."""
     import asyncio
     import httpx
 
@@ -138,33 +121,49 @@ async def get_providers_health():
     checks: List[tuple] = []
     results: Dict[str, str] = {}
 
+    gemini_key = (
+        settings.GEMINI_API_KEY_1 or settings.GEMINI_API_KEY_2 or settings.GEMINI_API_KEY_3 or
+        settings.GEMINI_API_KEY_4 or settings.GEMINI_API_KEY_5 or settings.GEMINI_API_KEY
+    )
+    openrouter_key = settings.OPENROUTER_API_KEY or settings.NVIDIA_API_KEY
+    groq_key = settings.GROQ_API_KEY
+
     async with httpx.AsyncClient(timeout=3.0) as client:
-        if not settings.NVIDIA_API_KEY:
-            results["Nemotron"] = "DOWN (API key missing)"
+        # 1. Gemini
+        if not gemini_key or "YOUR-" in gemini_key.upper():
+            results["Gemini (Primary 5-Keys)"] = "DOWN (API key missing)"
         else:
             checks.append((
-                "Nemotron",
-                probe(client, f"{settings.NVIDIA_BASE_URL.rstrip('/')}/models",
-                      {"Authorization": f"Bearer {settings.NVIDIA_API_KEY}"}),
-            ))
-
-        if not settings.GEMINI_API_KEY or "YOUR-GOOGLE" in settings.GEMINI_API_KEY:
-            results["Gemini"] = "DOWN (API key missing/placeholder)"
-        else:
-            checks.append((
-                "Gemini",
+                "Gemini (Primary 5-Keys)",
                 probe(client, f"{settings.GEMINI_BASE_URL.rstrip('/')}/models/{settings.GEMINI_MODEL}",
-                      {"x-goog-api-key": settings.GEMINI_API_KEY}),
+                      {"x-goog-api-key": gemini_key}),
             ))
 
-        for name, url in _llama_nodes():
-            checks.append((name, probe(client, f"{url}/api/tags")))
+        # 2. Groq
+        if not groq_key or "YOUR-" in groq_key.upper():
+            results["Groq (Secondary LPU)"] = "STANDBY (API key optional)"
+        else:
+            checks.append((
+                "Groq (Secondary LPU)",
+                probe(client, f"{settings.GROQ_BASE_URL.rstrip('/')}/models",
+                      {"Authorization": f"Bearer {groq_key}"}),
+            ))
+
+        # 3. OpenRouter
+        if not openrouter_key or "YOUR-" in openrouter_key.upper():
+            results["OpenRouter (Tertiary Free OSS)"] = "STANDBY (API key optional)"
+        else:
+            checks.append((
+                "OpenRouter (Tertiary Free OSS)",
+                probe(client, f"{settings.OPENROUTER_BASE_URL.rstrip('/')}/models",
+                      {"Authorization": f"Bearer {openrouter_key}"}),
+            ))
 
         # Supabase check is blocking, so keep it off the event loop.
         db_task = asyncio.to_thread(database.verify_connection)
         probe_results = await asyncio.gather(db_task, *[c[1] for c in checks])
 
-    results["Supabase"] = "UP" if probe_results[0] else "DOWN"
+    results["Supabase Database"] = "UP" if probe_results[0] else "DOWN"
     for (name, _), outcome in zip(checks, probe_results[1:]):
         results[name] = outcome
     return results
@@ -902,28 +901,22 @@ def get_admin_health(
     except Exception:
         db_status = "unhealthy"
 
-    # Check Ollama status
-    ollama_status = "healthy"
-    if not settings.DEV_MODE:
-        try:
-            import httpx
-            r = httpx.get(f"{settings.OLLAMA_BASE_URL}/api/tags", timeout=2.0)
-            if r.status_code != 200:
-                ollama_status = "unhealthy"
-        except Exception:
-            ollama_status = "unhealthy"
-    else:
-        ollama_status = "mocked"
+    # Check LLM status
+    gemini_key = (
+        settings.GEMINI_API_KEY_1 or settings.GEMINI_API_KEY_2 or settings.GEMINI_API_KEY_3 or
+        settings.GEMINI_API_KEY_4 or settings.GEMINI_API_KEY_5 or settings.GEMINI_API_KEY
+    )
+    llm_status = "healthy" if (gemini_key or settings.DEV_MODE) else "unconfigured"
 
     cpu = psutil.cpu_percent()
     ram = psutil.virtual_memory().percent
 
     return {
-        "status": "healthy" if db_status == "healthy" and ollama_status != "unhealthy" else "unhealthy",
+        "status": "healthy" if db_status == "healthy" and llm_status == "healthy" else "unhealthy",
         "backend": "healthy",
         "database": db_status,
-        "ollama": ollama_status,
-        "configured_model": settings.OLLAMA_MODEL if not settings.DEV_MODE else "mock-provider-active",
+        "ollama": "healthy (cloud)",
+        "configured_model": settings.GEMINI_MODEL if not settings.DEV_MODE else "mock-provider-active",
         "queue_size": queue_manager.queue.qsize(),
         "cpu_usage_percent": cpu,
         "ram_usage_percent": ram
