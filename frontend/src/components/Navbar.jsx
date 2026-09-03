@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Shield, Trophy, Clock, LogIn, LogOut, User, Terminal, Map, BookOpen } from 'lucide-react';
+import { Shield, Trophy, Clock, LogIn, LogOut, User, Terminal, Map, BookOpen, Volume2, VolumeX } from 'lucide-react';
 import { apiLogout } from '../services/api';
+import { isSoundMuted, toggleSoundMuted } from '../utils/effects';
 
 export default function Navbar({ user, timerState }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [muted, setMuted] = React.useState(isSoundMuted());
 
   const formatTime = (seconds) => {
     if (!seconds || seconds <= 0) return '00:00:00';
@@ -112,6 +114,19 @@ export default function Navbar({ user, timerState }) {
 
         {/* User Status / Action Button */}
         <div className="flex items-center gap-3">
+          {/* Audio FX Toggle */}
+          <button
+            onClick={() => setMuted(toggleSoundMuted())}
+            title={muted ? "Sound Effects Muted (Click to Unmute)" : "Sound Effects Active (Click to Mute)"}
+            className={`p-2 rounded-xl border transition-colors ${
+              muted
+                ? 'bg-slate-100 text-slate-400 border-slate-200 hover:text-slate-600'
+                : 'bg-blue-50 text-brand-blue border-blue-200 hover:bg-blue-100'
+            }`}
+          >
+            {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+
           {user ? (
             <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200">

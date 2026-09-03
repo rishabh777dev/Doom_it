@@ -1,6 +1,9 @@
 // api.js - Centralized API client for Vakya-Bhed 2026
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, ''); // Configurable for Vercel -> Render or local Vite proxy
+const BASE_URL = import.meta.env.DEV
+  ? ''
+  : (import.meta.env.VITE_API_BASE_URL || 'https://doom-it-backend.onrender.com').replace(/\/+$/, '');
+
 
 export const getToken = () => localStorage.getItem('token');
 export const setToken = (token) => localStorage.setItem('token', token);
