@@ -14,12 +14,14 @@ import ArenaPage from './pages/ArenaPage';
 // Admin Isolated Pages
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import SessionSupersededModal from './components/SessionSupersededModal';
 
 import { apiGetTimer, apiGetMe, getToken } from './services/api';
 
 function AppContent() {
   const [user, setUser] = useState(null);
   const [timerState, setTimerState] = useState(null);
+  const [sessionSuperseded, setSessionSuperseded] = useState(false);
   const location = useLocation();
 
   const loadUser = async () => {
@@ -49,7 +51,10 @@ function AppContent() {
     loadTimer();
 
     const onAuthChange = () => loadUser();
+    const onSessionSuperseded = () => setSessionSuperseded(true);
+
     window.addEventListener('auth_change', onAuthChange);
+    window.addEventListener('session_superseded', onSessionSuperseded);
 
     // 1-second countdown interval
     const timerInterval = setInterval(() => {
@@ -69,6 +74,7 @@ function AppContent() {
 
     return () => {
       window.removeEventListener('auth_change', onAuthChange);
+      window.removeEventListener('session_superseded', onSessionSuperseded);
       clearInterval(timerInterval);
       clearInterval(syncInterval);
     };
@@ -78,6 +84,11 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between selection:bg-brand-blue selection:text-white">
+      {/* Graceful Single-Device Handover Modal */}
+      <SessionSupersededModal
+        isOpen={sessionSuperseded}
+        onClose={() => setSessionSuperseded(false)}
+      />
       
       {/* Show Participant Navbar ONLY for non-admin routes */}
       {!isAdminRoute && (

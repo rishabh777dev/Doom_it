@@ -27,11 +27,15 @@ const getHeaders = (customHeaders = {}) => {
 
 const handleResponse = async (res) => {
   if (res.status === 401) {
-    // Session expired or invalidated by login on another device
-    removeToken();
-    window.dispatchEvent(new Event('auth_change'));
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Session expired or invalidated.');
+    const detail = errorData.detail || '';
+    if (detail.includes('SESSION_SUPERSEDED') || detail.includes('another device')) {
+      window.dispatchEvent(new CustomEvent('session_superseded', { detail }));
+    } else {
+      removeToken();
+      window.dispatchEvent(new Event('auth_change'));
+    }
+    throw new Error(detail || 'Session expired or invalidated.');
   }
 
   const data = await res.json().catch(() => ({}));

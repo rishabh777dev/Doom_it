@@ -349,8 +349,9 @@ def login(login_data: UserLogin, response: Response, db: Session = Depends(get_d
             detail="Incorrect username or password"
         )
         
-    # Generate stateless token session
-    session_token = init_user_session(db, user.id)
+    # Generate stateless token session (admins exempt from single-device eviction)
+    is_admin = (user.team_name == "admin")
+    session_token = init_user_session(db, user.id, is_admin=is_admin)
     
     # Generate JWT access token containing username and session token
     access_token = create_access_token(
@@ -457,9 +458,15 @@ async def run_submission(
     participant_id = str(current_participant.id)
     now = datetime.utcnow()
 
-    # 2a. Check submission cooldown
+    # 2a. Check submission cooldown & anti-automation typing cadence
     if participant_id in last_submission_times:
         elapsed = (now - last_submission_times[participant_id]).total_seconds()
+        if elapsed < 1.5:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Anti-automation active: Minimum 2-second typing cadence required between prompts.",
+                headers={"Retry-After": "2"}
+            )
         if elapsed < settings.SUBMISSION_COOLDOWN_SECONDS:
             remaining = max(1, int(settings.SUBMISSION_COOLDOWN_SECONDS - elapsed))
             raise HTTPException(

@@ -74,8 +74,8 @@ def get_current_user(
     if team is None:
         raise credentials_exception
 
-    # Enforce single-device login session tracking if enabled
-    if settings.SINGLE_DEVICE_LOGIN:
+    # Enforce single-device login session tracking if enabled (admins exempt)
+    if settings.SINGLE_DEVICE_LOGIN and team.team_name != "admin":
         active_sess = db.query(UserSession).filter(
             UserSession.user_id == team.id,
             UserSession.is_active == True
@@ -84,7 +84,7 @@ def get_current_user(
         if not active_sess or active_sess.session_token != session_token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Your session has been invalidated because you logged in from another device.",
+                detail="SESSION_SUPERSEDED: Your team's active battle terminal was transferred to another device.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
             
@@ -114,9 +114,9 @@ def get_current_admin(
         )
     return current_team
 
-def init_user_session(db: Session, user_id: str) -> str:
-    # Deactivate previous active sessions for this user if single device policy is active
-    if settings.SINGLE_DEVICE_LOGIN:
+def init_user_session(db: Session, user_id: str, is_admin: bool = False) -> str:
+    # Deactivate previous active sessions for this user if single device policy is active and not admin
+    if settings.SINGLE_DEVICE_LOGIN and not is_admin:
         db.query(UserSession).filter(
             UserSession.user_id == user_id,
             UserSession.is_active == True
