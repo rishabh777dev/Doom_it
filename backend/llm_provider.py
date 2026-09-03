@@ -245,11 +245,13 @@ class GeminiLLMProvider(LLMProvider):
     name = "Gemini Flash"
 
     def __init__(self, api_keys: Optional[List[str]] = None, base_url: Optional[str] = None, model: Optional[str] = None):
-        # Pool all configured keys (PK1, PK2, PK3)
+        # Pool all configured keys (PK1..PK5)
         raw_keys = api_keys or [
             settings.GEMINI_API_KEY_1,
             settings.GEMINI_API_KEY_2,
             settings.GEMINI_API_KEY_3,
+            settings.GEMINI_API_KEY_4,
+            settings.GEMINI_API_KEY_5,
             settings.GEMINI_API_KEY,
         ]
         self.api_keys = [k.strip() for k in raw_keys if k and k.strip() and not _looks_like_placeholder(k)]

@@ -47,11 +47,13 @@ class Settings(BaseSettings):
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
     NVIDIA_MODEL: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
 
-    # Google Gemini Settings (Multi-Key Pool PK1, PK2, PK3 with instant failover)
+    # Google Gemini Settings (Multi-Key Pool PK1..PK5 with instant failover)
     GEMINI_API_KEY: str = ""
     GEMINI_API_KEY_1: str = ""
     GEMINI_API_KEY_2: str = ""
     GEMINI_API_KEY_3: str = ""
+    GEMINI_API_KEY_4: str = ""
+    GEMINI_API_KEY_5: str = ""
     GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta"
     GEMINI_MODEL: str = "gemini-3.1-flash-lite"
 
