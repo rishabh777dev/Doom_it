@@ -238,6 +238,7 @@ export default function ArenaPage({ user }) {
         content: `⚠️ Transmission Error: ${err.message || 'Connection interrupted. Please retry.'}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isError: true,
+        failedPromptText: text,
       };
       setMessages((prev) => [...prev, errMsg]);
       setFeedback({ type: 'error', text: err.message });
@@ -502,6 +503,20 @@ export default function ArenaPage({ user }) {
                           </button>
                         )}
                       </div>
+
+                      {msg.isError && msg.failedPromptText && (
+                        <div className="mt-2.5 pt-2 border-t border-rose-200/80 flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-semibold text-rose-700">Prompt preserved in memory</span>
+                          <button
+                            onClick={() => handleSendMessage(msg.failedPromptText)}
+                            disabled={isSubmitting}
+                            className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${isSubmitting ? 'animate-spin' : ''}`} />
+                            <span>Retry Prompt</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {isUser && (
