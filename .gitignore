@@ -1,0 +1,42 @@
+# Secrets & Environment variables
+.env
+*.env
+**/.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+venv/
+.venv/
+env/
+.env/
+
+# Node & Frontend
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.vite/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+_smoke*.db
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Old backups
+LLM_CTF old/
+
