@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, User, Lock, AlertCircle, RefreshCw, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Shield, User, Lock, AlertCircle, RefreshCw, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { apiLogin } from '../services/api';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -81,28 +82,23 @@ export default function LoginPage() {
               <Lock className="w-3.5 h-3.5 text-brand-blue" />
               <span>Team Password Key</span>
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter team password"
-              className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-300 font-medium text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:bg-white transition-all"
-            />
-          </div>
-
-          {/* Quick Credential Button for local testing */}
-          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-            <span>Demo credentials:</span>
-            <button
-              type="button"
-              onClick={() => {
-                setUsername('test_team');
-                setPassword('password');
-              }}
-              className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-brand-blue font-semibold border border-blue-200 transition-colors"
-            >
-              Fill test_team
-            </button>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter team password"
+                className="w-full pl-4 pr-11 py-3 rounded-2xl bg-slate-50 border border-slate-300 font-medium text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:bg-white transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand-blue transition-colors p-1 cursor-pointer"
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <button
