@@ -15,6 +15,7 @@ import ArenaPage from './pages/ArenaPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import SessionSupersededModal from './components/SessionSupersededModal';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import { apiGetTimer, apiGetMe, getToken } from './services/api';
 
@@ -97,45 +98,47 @@ function AppContent() {
 
       {/* Main Routed Content */}
       <main className="flex-1">
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<LandingPage user={user} timerState={timerState} />} />
-          <Route path="/rules" element={<RulesPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage user={user} />} />
-          <Route path="/login" element={<LoginPage />} />
+        <ErrorBoundary>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage user={user} timerState={timerState} />} />
+            <Route path="/rules" element={<RulesPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage user={user} />} />
+            <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected Contestant Routes */}
-          <Route
-            path="/levels"
-            element={
-              <ProtectedRoute user={user}>
-                <LevelsPage user={user} />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/arena"
-            element={
-              <ProtectedRoute user={user}>
-                <ArenaPage user={user} />
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected Contestant Routes */}
+            <Route
+              path="/levels"
+              element={
+                <ProtectedRoute user={user}>
+                  <LevelsPage user={user} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/arena"
+              element={
+                <ProtectedRoute user={user}>
+                  <ArenaPage user={user} />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Isolated Admin Routes */}
-          <Route path="/admin/login" element={<AdminLoginPage />} />
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute user={user} adminOnly={true}>
-                <AdminDashboardPage timerState={timerState} onStateUpdated={loadTimer} />
-              </ProtectedRoute>
-            }
-          />
+            {/* Isolated Admin Routes */}
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute user={user} adminOnly={true}>
+                  <AdminDashboardPage timerState={timerState} onStateUpdated={loadTimer} />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Catch-all redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* Catch-all redirect */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
 
       {/* Footer for non-admin routes */}
