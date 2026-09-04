@@ -119,32 +119,6 @@ export default function HeroSection({ onGetStarted, onOpenRules }) {
 
               </div>
 
-              {/* Floating Tooltip Card 1 (Top Left Overlap) */}
-              <div className="absolute -top-5 -left-4 sm:-left-8 bg-white/95 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-float z-20 max-w-[210px] sm:max-w-[230px] animate-float-slow transform rotate-[-2deg] hover:rotate-0 transition-transform">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-6 h-6 rounded-lg bg-blue-100 text-brand-blue flex items-center justify-center">
-                    <Zap className="w-3.5 h-3.5 fill-brand-blue" />
-                  </div>
-                  <span className="font-display font-bold text-xs text-slate-900">Multi-Node Arena</span>
-                </div>
-                <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                  High-speed cluster with real-time prompt inference & automatic failover.
-                </p>
-              </div>
-
-              {/* Floating Tooltip Card 2 (Bottom Right Overlap) */}
-              <div className="absolute -bottom-6 right-2 sm:-right-4 bg-white/95 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-float z-20 max-w-[210px] sm:max-w-[230px] animate-float-reverse transform rotate-[2deg] hover:rotate-0 transition-transform">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                    <Shield className="w-3.5 h-3.5 stroke-[2.5]" />
-                  </div>
-                  <span className="font-display font-bold text-xs text-slate-900">Isolated Sandbox</span>
-                </div>
-                <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                  Safe ethical playground to train prompt injection & defense skills.
-                </p>
-              </div>
-
             </div>
 
           </div>
