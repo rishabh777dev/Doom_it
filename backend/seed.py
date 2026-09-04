@@ -173,6 +173,29 @@ def seed_database():
         else:
             logger.info("Test team user already exists in teams table.")
 
+        # 7. Self-healing check: Ensure every team has valid Progress and Score records
+        for team in db.query(Team).all():
+            if not team.progress:
+                db.add(Progress(
+                    team_id=team.id,
+                    current_level=1,
+                    total_score=0,
+                    unlocked_levels=[1],
+                    completed_levels=[],
+                    attempts={}
+                ))
+                logger.info("Healed missing progress record for team %s", team.team_name)
+            if not team.score_summary:
+                db.add(Score(
+                    team_id=team.id,
+                    round1_score=0,
+                    round2_score=0,
+                    round3_score=0,
+                    total_score=0
+                ))
+                logger.info("Healed missing score record for team %s", team.team_name)
+        db.commit()
+
     finally:
         db.close()
 
