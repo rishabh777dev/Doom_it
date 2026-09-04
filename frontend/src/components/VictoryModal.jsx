@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Trophy, ArrowRight, Sparkles, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, scoreAwarded, totalScore }) {
@@ -67,7 +67,7 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
           onClick={onClose}
           className="w-full py-3.5 px-6 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all transform active:scale-98 cursor-pointer"
         >
-          <span>{nextLevel ? `Engage ${nextLevel.title}` : 'Proceed to Mission Hub'}</span>
+          <span>Continue to Challenge Roadmap</span>
           <ArrowRight className="w-4 h-4" />
         </button>
 

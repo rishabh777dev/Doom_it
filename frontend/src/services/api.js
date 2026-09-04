@@ -149,8 +149,11 @@ export const apiGetParticipantStats = async () => {
   return handleResponse(res);
 };
 
-export const apiGetSubmissionHistory = async (limit = 50) => {
-  const res = await fetch(`${BASE_URL}/api/arena/history?limit=${limit}`, {
+export const apiGetSubmissionHistory = async (limit = 50, levelId = null) => {
+  const url = levelId !== null
+    ? `${BASE_URL}/api/arena/history?limit=${limit}&level_id=${levelId}`
+    : `${BASE_URL}/api/arena/history?limit=${limit}`;
+  const res = await fetch(url, {
     headers: getHeaders(),
   });
   return handleResponse(res);

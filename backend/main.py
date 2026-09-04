@@ -668,13 +668,18 @@ async def submit_prompt(
 @app.get("/api/arena/history", response_model=List[SubmissionDetail])
 def get_submission_history(
     limit: int = 200,
+    level_id: Optional[int] = None,
     current_participant: Team = Depends(get_current_participant),
     db: Session = Depends(get_db)
 ):
     limit = max(1, min(limit, 1000))
-    logs = db.query(PromptLog).filter(
+    query = db.query(PromptLog).filter(
         PromptLog.team_id == current_participant.id
-    ).order_by(desc(PromptLog.created_at)).limit(limit).all()
+    )
+    if level_id is not None:
+        query = query.filter(PromptLog.level == level_id)
+
+    logs = query.order_by(desc(PromptLog.created_at)).limit(limit).all()
 
     levels = {l.level_id: l for l in db.query(Level).all()}
     hints_revealed = revealed_hint_levels(db, current_participant.id)

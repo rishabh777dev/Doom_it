@@ -21,7 +21,7 @@ logger = logging.getLogger("vakyabhed.llm_provider")
 # One pooled client for every provider: a fresh AsyncClient per request pays
 # TCP + TLS setup every time, which is the dominant cost under contest load.
 _HTTP_LIMITS = httpx.Limits(max_connections=64, max_keepalive_connections=32)
-_REQUEST_TIMEOUT = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
+_REQUEST_TIMEOUT = httpx.Timeout(connect=3.0, read=15.0, write=5.0, pool=3.0)
 
 _client: Optional[httpx.AsyncClient] = None
 _client_lock = asyncio.Lock()

@@ -61,24 +61,6 @@ export default function Navbar({ user, timerState }) {
           </div>
         </Link>
 
-        {/* Live Timer Pill (Desktop & Tablet) - ONLY SHOWN TO LOGGED-IN CONTESTANTS */}
-        {user && (
-          <div className="hidden sm:flex items-center gap-2.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-slate-100/90 border border-slate-200/90 shadow-sm">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-              <Clock className="w-3.5 h-3.5 text-brand-blue" />
-              <span className="hidden md:inline">Clock</span>
-            </div>
-            <div className="h-3.5 w-px bg-slate-300"></div>
-            <div className="font-mono font-bold text-xs sm:text-sm text-slate-900 tracking-tight">
-              {formatTime(timerState?.time_remaining_seconds)}
-            </div>
-            <div className={`w-2 h-2 rounded-full ${timerState?.status === 'live' ? 'bg-emerald-500 animate-pulse' : timerState?.status === 'paused' ? 'bg-amber-500' : 'bg-rose-500'}`} />
-            <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 uppercase tracking-wide">
-              {timerState?.status || 'OFFLINE'}
-            </span>
-          </div>
-        )}
-
         {/* Desktop Navigation Links */}
         <nav className="hidden lg:flex items-center gap-1">
           <Link
@@ -135,6 +117,24 @@ export default function Navbar({ user, timerState }) {
 
         {/* Right Status Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Live Timer Pill (Desktop & Tablet) - Positioned cleanly on the right for logged-in teams */}
+          {user && (
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/90 border border-slate-200/90 shadow-sm">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <Clock className="w-3.5 h-3.5 text-brand-blue" />
+                <span className="hidden xl:inline">Clock</span>
+              </div>
+              <div className="h-3.5 w-px bg-slate-300"></div>
+              <div className="font-mono font-bold text-xs sm:text-sm text-slate-900 tracking-tight">
+                {formatTime(timerState?.time_remaining_seconds)}
+              </div>
+              <div className={`w-2 h-2 rounded-full ${timerState?.status === 'live' ? 'bg-emerald-500 animate-pulse' : timerState?.status === 'paused' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+              <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                {timerState?.status || 'OFFLINE'}
+              </span>
+            </div>
+          )}
+
           {/* Audio FX Toggle */}
           <button
             onClick={() => setMuted(toggleSoundMuted())}

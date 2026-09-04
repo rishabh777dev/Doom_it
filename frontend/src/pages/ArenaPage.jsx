@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Send,
   Key,
@@ -38,6 +38,7 @@ import { triggerVictoryConfetti, playSound } from '../utils/effects';
 import VictoryModal from '../components/VictoryModal';
 
 export default function ArenaPage({ user }) {
+  const navigate = useNavigate();
   const [activeLevel, setActiveLevel] = useState(null);
   const [allLevels, setAllLevels] = useState([]);
   const [selectedLevelId, setSelectedLevelId] = useState(null);
@@ -129,8 +130,8 @@ export default function ArenaPage({ user }) {
         setHintState({ released: true, revealed: true, hint_text: currentLvl.hint_text });
       }
 
-      // Load past submission history and filter ONLY for this specific level
-      const history = await apiGetSubmissionHistory(100).catch(() => []);
+      // Load past submission history strictly for this specific level and team
+      const history = await apiGetSubmissionHistory(100, currentLvl.level_id).catch(() => []);
       const levelHistory = history.filter((h) => h.level_id === currentLvl.level_id).reverse();
 
       const chatList = [];
@@ -310,7 +311,7 @@ export default function ArenaPage({ user }) {
 
   const handleVictoryClose = () => {
     setVictoryData({ isOpen: false, solvedLevel: null, nextLevel: null, scoreAwarded: 0, totalScore: 0 });
-    loadLevelData();
+    navigate('/levels');
   };
 
   const handleRevealHint = async () => {
