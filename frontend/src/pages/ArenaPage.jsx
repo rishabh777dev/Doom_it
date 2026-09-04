@@ -63,6 +63,7 @@ export default function ArenaPage({ user }) {
     nextLevel: null,
     scoreAwarded: 0,
     totalScore: 0,
+    scoreBreakdown: null,
   });
 
   const chatScrollContainerRef = useRef(null);
@@ -244,6 +245,7 @@ export default function ArenaPage({ user }) {
           nextLevel: nextLvl,
           scoreAwarded: res.score_awarded,
           totalScore: res.total_score,
+          scoreBreakdown: res.score_breakdown,
         });
       }
     } catch (err) {
@@ -296,6 +298,7 @@ export default function ArenaPage({ user }) {
           nextLevel: nextLvl,
           scoreAwarded: res.score_awarded,
           totalScore: res.total_score,
+          scoreBreakdown: res.score_breakdown,
         });
       } else {
         playSound('error');
@@ -374,6 +377,7 @@ export default function ArenaPage({ user }) {
         nextLevel={victoryData.nextLevel}
         scoreAwarded={victoryData.scoreAwarded}
         totalScore={victoryData.totalScore}
+        scoreBreakdown={victoryData.scoreBreakdown}
       />
 
       <div className="max-w-7xl mx-auto space-y-4">

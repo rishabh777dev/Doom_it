@@ -23,7 +23,8 @@ from backend.schemas import (
     UserLogin, TokenResponse, UserResponse, ParticipantCreate, ParticipantUpdate, ParticipantResponse,
     LevelInfo, PromptSubmit, SubmissionResponse, SubmissionDetail, ParticipantStatsResponse, LevelProgressDetail,
     LeaderboardResponse, LeaderboardEntry, TimerResponse, CompetitionStateUpdate, AdminSubmissionLog, SystemHealthResponse,
-    HintStatusResponse, HintRevealResponse, HintRevealRequest, PasswordVerify, AdminLevelInfo, LevelSecretUpdate
+    HintStatusResponse, HintRevealResponse, HintRevealRequest, PasswordVerify, AdminLevelInfo, LevelSecretUpdate,
+    ScoreBreakdown
 )
 from backend.auth import (
     hash_password, verify_password, create_access_token, get_current_user,
@@ -31,7 +32,7 @@ from backend.auth import (
 )
 from backend.evaluator import evaluate_submission
 from backend.llm_provider import LevelContext, close_http_client
-from backend.scoring import calculate_score, get_hint_penalty
+from backend.scoring import calculate_score, get_hint_penalty, get_score_breakdown
 from backend.queue_manager import QueueFullError, queue_manager
 from backend.seed import seed_database
 
@@ -549,10 +550,16 @@ async def run_submission(
     completed_list = list(current_participant.progress.completed_levels or [])
     already_solved = level.level_id in completed_list
     score_awarded = 0
+    score_breakdown = None
+
     if success and level_ctx.round_id == 3 and not already_solved:
         hint_tier = revealed_hint_levels(db, current_participant.id).get(level_ctx.level_id, 0)
-        score_awarded = calculate_score(level_ctx.level_id, current_attempt, hint_tier=hint_tier)
+        score_breakdown = get_score_breakdown(level_ctx.level_id, current_attempt, hint_tier)
+        score_awarded = score_breakdown["final_score"]
         already_solved = True
+    elif already_solved:
+        hint_tier = revealed_hint_levels(db, current_participant.id).get(level_ctx.level_id, 0)
+        score_breakdown = get_score_breakdown(level_ctx.level_id, current_attempt, hint_tier)
 
     # Async Write-Behind: Return response immediately without waiting for database!
     if background_tasks:
@@ -596,7 +603,8 @@ async def run_submission(
         "level_solved": already_solved,
         "current_level_id": current_participant.progress.current_level,
         "total_score": current_participant.progress.total_score,
-        "latency_ms": int(latency * 1000)
+        "latency_ms": int(latency * 1000),
+        "score_breakdown": score_breakdown
     }
 
 
@@ -832,10 +840,14 @@ def get_participant_stats(
 
         solved = lvl.level_id in completed_levels
         score_earned = 0
+        score_breakdown = None
         if solved:
-            # Calculate score earned based on the attempts used before/when solved
+            h_tier = hints_revealed.get(lvl.level_id, 0)
             score_earned = calculate_score(
-                lvl.level_id, attempts_count, hints_revealed.get(lvl.level_id, 0)
+                lvl.level_id, attempts_count, h_tier
+            )
+            score_breakdown = get_score_breakdown(
+                lvl.level_id, attempts_count, h_tier
             )
 
         level_details.append(LevelProgressDetail(
@@ -844,7 +856,8 @@ def get_participant_stats(
             round_id=lvl.round_id,
             attempts_used=attempts_count,
             solved=solved,
-            score_earned=score_earned
+            score_earned=score_earned,
+            score_breakdown=score_breakdown
         ))
 
     recent_submissions = get_submission_history(
@@ -1641,11 +1654,12 @@ def verify_level_password(
     already_solved = level_id in (current_participant.progress.completed_levels or [])
 
     score_awarded = 0
+    hint_tier = revealed_hint_levels(db, current_participant.id).get(level_id, 0)
+    effective_attempts = max(1, attempts_used + 1)
+    score_breakdown = get_score_breakdown(level_id, effective_attempts, hint_tier)
+
     if not already_solved:
-        hint_tier = revealed_hint_levels(db, current_participant.id).get(level_id, 0)
-        # Use attempts_used+1 because this password verification is the resolution
-        # attempt for this level; attempts_used reflects attempts before this call.
-        score_awarded = calculate_score(level_id, max(1, attempts_used + 1), hint_tier=hint_tier)
+        score_awarded = score_breakdown["final_score"]
         award_level_completion(db, current_participant, level_id, score_awarded, round_id=level.round_id)
 
     return {
@@ -1656,7 +1670,8 @@ def verify_level_password(
         "attempts_remaining": attempts_remaining,
         "level_solved": True,
         "current_level_id": current_participant.progress.current_level,
-        "total_score": current_participant.progress.total_score
+        "total_score": current_participant.progress.total_score,
+        "score_breakdown": score_breakdown
     }
 
 # GET /api/progress -> return participant progress

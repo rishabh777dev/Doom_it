@@ -90,3 +90,40 @@ def calculate_score(
         base -= get_hint_penalty(level_id, effective_tier)
 
     return max(0, base)
+
+
+def get_score_breakdown(
+    level_id: int,
+    attempt_number: int,
+    hint_tier: int = 0
+) -> dict:
+    """
+    Returns a comprehensive bifurcation breakdown of a solved level's score:
+    - Base score (+100)
+    - Attempt deduction (-X) based on extra attempts and round penalty rate
+    - Hint deduction (-Y) based on unlocked hint tier
+    - Net final score awarded
+    """
+    round_id = get_level_round(level_id)
+    penalty_rate = ROUND_ATTEMPT_PENALTIES.get(round_id, 2)
+    extra_attempts = max(0, attempt_number - 1)
+    attempt_deduction = extra_attempts * penalty_rate
+
+    effective_tier = hint_tier if (isinstance(hint_tier, int) and hint_tier > 0) else 0
+    hint_deduction = get_hint_penalty(level_id, effective_tier) if effective_tier > 0 else 0
+
+    base = 100
+    net = base - attempt_deduction - hint_deduction
+    final_score = max(0, net)
+
+    return {
+        "level_id": level_id,
+        "round_id": round_id,
+        "base_score": base,
+        "attempts_used": max(1, attempt_number),
+        "attempt_penalty_rate": penalty_rate,
+        "attempt_deduction": attempt_deduction,
+        "hint_tier_used": effective_tier,
+        "hint_deduction": hint_deduction,
+        "final_score": final_score
+    }

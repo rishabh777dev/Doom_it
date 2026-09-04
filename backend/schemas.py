@@ -98,6 +98,17 @@ class HintRevealResponse(BaseModel):
 class PromptSubmit(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=4000)
 
+class ScoreBreakdown(BaseModel):
+    level_id: int
+    round_id: int
+    base_score: int = 100
+    attempts_used: int = 1
+    attempt_penalty_rate: int = 2
+    attempt_deduction: int = 0
+    hint_tier_used: int = 0
+    hint_deduction: int = 0
+    final_score: int = 100
+
 class SubmissionResponse(BaseModel):
     success: bool
     llm_response: str
@@ -108,6 +119,7 @@ class SubmissionResponse(BaseModel):
     current_level_id: int
     total_score: int
     latency_ms: int = 0
+    score_breakdown: Optional[ScoreBreakdown] = None
 
 class SubmissionDetail(BaseModel):
     id: int
@@ -133,6 +145,7 @@ class LevelProgressDetail(BaseModel):
     attempts_used: int
     solved: bool
     score_earned: int
+    score_breakdown: Optional[ScoreBreakdown] = None
 
 class ParticipantStatsResponse(BaseModel):
     username: str

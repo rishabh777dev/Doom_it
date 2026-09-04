@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, CheckCircle2, Play, Terminal, Zap, ArrowRight, RefreshCw } from 'lucide-react';
+import { Shield, Lock, CheckCircle2, Play, Terminal, Zap, ArrowRight, RefreshCw, Receipt } from 'lucide-react';
 import { apiGetParticipantStats, apiGetCurrentLevel, apiGetLevels } from '../services/api';
+import ScoreBreakdownModal from '../components/ScoreBreakdownModal';
 
 export default function LevelsPage({ user }) {
   const [stats, setStats] = useState(null);
   const [currentLevel, setCurrentLevel] = useState(null);
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBreakdown, setSelectedBreakdown] = useState(null);
   const navigate = useNavigate();
 
   const loadData = async () => {
@@ -201,30 +203,57 @@ export default function LevelsPage({ user }) {
                         </div>
 
                         {/* Footer / CTA */}
-                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold">
-                          <div className="text-slate-500">
-                            {detail.solved ? (
-                              <span className="text-emerald-600 font-bold font-mono">
-                                +{detail.score_earned} pts ({detail.attempts_used} att.)
-                              </span>
-                            ) : (
-                              <div className="flex flex-col">
-                                <span>{lvl.base_score || 100} Max pts</span>
-                                {lvl.hint_penalty ? (
-                                  <span className="text-[10px] text-rose-500 font-semibold">Hint: -{lvl.hint_penalty} pts</span>
-                                ) : null}
-                              </div>
+                        <div className="pt-3 border-t border-slate-100 flex flex-col gap-2 text-xs font-semibold">
+                          <div className="flex items-center justify-between">
+                            <div className="text-slate-500">
+                              {detail.solved ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-emerald-700 font-extrabold font-mono text-sm">
+                                    +{detail.score_earned} PTS
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-mono">
+                                    ({detail.attempts_used} att.)
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col">
+                                  <span>{lvl.base_score || 100} Max pts</span>
+                                  {lvl.hint_penalty ? (
+                                    <span className="text-[10px] text-rose-500 font-semibold">Hint: -{lvl.hint_penalty} pts</span>
+                                  ) : null}
+                                </div>
+                              )}
+                            </div>
+
+                            {unlocked && !detail.solved && (
+                              <button
+                                onClick={() => navigate('/arena')}
+                                className="flex items-center gap-1 text-xs font-bold text-brand-blue hover:text-blue-700 transition-colors cursor-pointer"
+                              >
+                                <span>Enter Arena</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
                             )}
                           </div>
 
-                          {unlocked && (
-                            <button
-                              onClick={() => navigate('/arena')}
-                              className="flex items-center gap-1 text-xs font-bold text-brand-blue hover:text-blue-700 transition-colors cursor-pointer"
-                            >
-                              <span>Enter Arena</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
+                          {detail.solved && (
+                            <div className="flex items-center gap-2 pt-0.5">
+                              <button
+                                onClick={() => setSelectedBreakdown({ level: lvl, detail })}
+                                className="flex-1 py-1 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                              >
+                                <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Score Bifurcation</span>
+                              </button>
+                              <button
+                                onClick={() => navigate('/arena')}
+                                className="py-1 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                title="Review Arena logs"
+                              >
+                                <span>Review</span>
+                                <ArrowRight className="w-3 h-3 text-slate-400" />
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -258,6 +287,13 @@ export default function LevelsPage({ user }) {
         })}
       </div>
 
+      {/* Score Bifurcation Detail Modal */}
+      <ScoreBreakdownModal
+        isOpen={Boolean(selectedBreakdown)}
+        onClose={() => setSelectedBreakdown(null)}
+        level={selectedBreakdown?.level}
+        detail={selectedBreakdown?.detail}
+      />
     </div>
   );
 }
