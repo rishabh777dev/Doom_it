@@ -60,6 +60,10 @@ export default function LevelsPage({ user }) {
   };
 
   const isUnlocked = (lvlId) => {
+    const lvl = levels.find((l) => l.level_id === lvlId);
+    if (lvl && stats?.current_round_id && lvl.round_id > stats.current_round_id) {
+      return false;
+    }
     if (!currentLevel) return lvlId === 1;
     return lvlId <= currentLevel.level_id;
   };
@@ -127,88 +131,108 @@ export default function LevelsPage({ user }) {
                   const unlocked = isUnlocked(lvl.level_id);
                   const isCurrent = currentLevel && currentLevel.level_id === lvl.level_id;
 
+                  const roundLocked = stats?.current_round_id && lvl.round_id > stats.current_round_id;
+                  const isLocked = !unlocked;
+
                   return (
                     <div
                       key={lvl.level_id}
-                      className={`bg-white rounded-3xl border-2 p-5 sm:p-6 shadow-card transition-all flex flex-col justify-between space-y-4 ${
+                      className={`relative overflow-hidden rounded-3xl border-2 p-5 sm:p-6 transition-all flex flex-col justify-between space-y-4 ${
                         detail.solved
-                          ? 'border-emerald-500/80 bg-emerald-50/10'
+                          ? 'bg-white border-emerald-500/80 bg-emerald-50/10 shadow-card'
                           : isCurrent
-                          ? 'border-slate-900 shadow-solid'
+                          ? 'bg-white border-slate-900 shadow-solid'
                           : unlocked
-                          ? 'border-slate-900'
-                          : 'border-slate-200 opacity-65'
+                          ? 'bg-white border-slate-900 shadow-card'
+                          : 'bg-slate-100/70 border-slate-300 shadow-sm select-none'
                       }`}
                     >
-                      <div>
-                        {/* Badge status */}
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="font-display font-extrabold text-xs uppercase tracking-wider text-slate-500">
-                            Level {lvl.level_id < 10 ? `0${lvl.level_id}` : lvl.level_id}
-                          </span>
+                      {/* Underlying Content (Blurred when not allowed) */}
+                      <div className={`flex flex-col justify-between flex-1 space-y-4 ${isLocked ? 'filter blur-[4px] opacity-35 select-none pointer-events-none' : ''}`}>
+                        <div>
+                          {/* Badge status */}
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="font-display font-extrabold text-xs uppercase tracking-wider text-slate-500">
+                              Level {lvl.level_id < 10 ? `0${lvl.level_id}` : lvl.level_id}
+                            </span>
 
-                          {detail.solved ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Solved</span>
-                            </span>
-                          ) : isCurrent ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-brand-blue animate-pulse">
-                              <span>Current Level</span>
-                            </span>
-                          ) : unlocked ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
-                              <span>Unlocked</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-400">
-                              <Lock className="w-3 h-3" />
-                              <span>Locked</span>
-                            </span>
-                          )}
+                            {detail.solved ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Solved</span>
+                              </span>
+                            ) : isCurrent ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-brand-blue animate-pulse">
+                                <span>Current Level</span>
+                              </span>
+                            ) : unlocked ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+                                <span>Unlocked</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-400">
+                                <Lock className="w-3 h-3" />
+                                <span>Locked</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="font-display font-extrabold text-lg text-slate-900">
+                            {lvl.title}
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                            {lvl.description}
+                          </p>
                         </div>
 
-                        <h3 className="font-display font-extrabold text-lg text-slate-900">
-                          {lvl.title}
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                          {lvl.description}
-                        </p>
-                      </div>
+                        {/* Footer / CTA */}
+                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold">
+                          <div className="text-slate-500">
+                            {detail.solved ? (
+                              <span className="text-emerald-600 font-bold font-mono">
+                                +{detail.score_earned} pts ({detail.attempts_used} att.)
+                              </span>
+                            ) : (
+                              <div className="flex flex-col">
+                                <span>{lvl.base_score || 100} Max pts</span>
+                                {lvl.hint_penalty ? (
+                                  <span className="text-[10px] text-rose-500 font-semibold">Hint: -{lvl.hint_penalty} pts</span>
+                                ) : null}
+                              </div>
+                            )}
+                          </div>
 
-                      {/* Footer / CTA */}
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold">
-                        <div className="text-slate-500">
-                          {detail.solved ? (
-                            <span className="text-emerald-600 font-bold font-mono">
-                              +{detail.score_earned} pts ({detail.attempts_used} att.)
-                            </span>
-                          ) : (
-                            <div className="flex flex-col">
-                              <span>{lvl.base_score || 100} Max pts</span>
-                              {lvl.hint_penalty ? (
-                                <span className="text-[10px] text-rose-500 font-semibold">Hint: -{lvl.hint_penalty} pts</span>
-                              ) : null}
-                            </div>
+                          {unlocked && (
+                            <button
+                              onClick={() => navigate('/arena')}
+                              className="flex items-center gap-1 text-xs font-bold text-brand-blue hover:text-blue-700 transition-colors cursor-pointer"
+                            >
+                              <span>Enter Arena</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
                           )}
                         </div>
-
-                        {unlocked ? (
-                          <button
-                            onClick={() => navigate('/arena')}
-                            className="flex items-center gap-1 text-xs font-bold text-brand-blue hover:text-blue-700 transition-colors"
-                          >
-                            <span>Enter Arena</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        ) : (
-                          <span className="text-slate-400 flex items-center gap-1 text-[11px]">
-                            <Lock className="w-3 h-3" />
-                            <span>Locked</span>
-                          </span>
-                        )}
                       </div>
 
+                      {/* Prominent Frosted Glass Blur Overlay & Lock Logo for Not Allowed Levels */}
+                      {isLocked && (
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-4 text-center bg-slate-900/10 backdrop-blur-[2px]">
+                          {/* Centered Logo Badge */}
+                          <div className="w-14 h-14 rounded-2xl bg-white/95 border-2 border-slate-300 shadow-md flex items-center justify-center text-slate-700 mb-2.5">
+                            <Lock className="w-6 h-6 text-slate-700 stroke-[2.2]" />
+                          </div>
+
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-white text-[11px] font-extrabold tracking-wider uppercase shadow-sm">
+                            <span>{roundLocked ? `Round ${lvl.round_id} Locked` : 'Restricted Level'}</span>
+                          </div>
+
+                          <p className="text-[11px] text-slate-700 font-semibold mt-1.5 max-w-[210px] leading-tight">
+                            {roundLocked 
+                              ? `Round ${lvl.round_id} has not yet started` 
+                              : `Complete Level ${lvl.level_id - 1 < 10 ? `0${lvl.level_id - 1}` : lvl.level_id - 1} to unlock intel`}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
