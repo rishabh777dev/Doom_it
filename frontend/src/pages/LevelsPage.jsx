@@ -137,18 +137,18 @@ export default function LevelsPage({ user }) {
                   return (
                     <div
                       key={lvl.level_id}
-                      className={`relative overflow-hidden rounded-3xl border-2 p-5 sm:p-6 transition-all flex flex-col justify-between space-y-4 ${
+                      className={`relative overflow-hidden rounded-3xl border-2 transition-all flex flex-col justify-between ${
                         detail.solved
                           ? 'bg-white border-emerald-500/80 bg-emerald-50/10 shadow-card'
                           : isCurrent
                           ? 'bg-white border-slate-900 shadow-solid'
                           : unlocked
                           ? 'bg-white border-slate-900 shadow-card'
-                          : 'bg-slate-100/70 border-slate-300 shadow-sm select-none'
+                          : 'bg-white border-slate-300 shadow-sm select-none'
                       }`}
                     >
                       {/* Underlying Content (Blurred when not allowed) */}
-                      <div className={`flex flex-col justify-between flex-1 space-y-4 ${isLocked ? 'filter blur-[4px] opacity-35 select-none pointer-events-none' : ''}`}>
+                      <div className={`p-5 sm:p-6 flex flex-col justify-between flex-1 space-y-4 ${isLocked ? 'filter blur-[5px] opacity-40 select-none pointer-events-none' : ''}`}>
                         <div>
                           {/* Badge status */}
                           <div className="flex items-center justify-between mb-3">
@@ -231,7 +231,7 @@ export default function LevelsPage({ user }) {
 
                       {/* Prominent Frosted Glass Blur Overlay & Lock Logo for Not Allowed Levels */}
                       {isLocked && (
-                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-4 text-center bg-slate-900/10 backdrop-blur-[2px]">
+                        <div className="absolute inset-0 !m-0 z-10 flex flex-col items-center justify-center p-4 text-center bg-slate-900/10 backdrop-blur-sm">
                           {/* Centered Logo Badge */}
                           <div className="w-14 h-14 rounded-2xl bg-white/95 border-2 border-slate-300 shadow-md flex items-center justify-center text-slate-700 mb-2.5">
                             <Lock className="w-6 h-6 text-slate-700 stroke-[2.2]" />
