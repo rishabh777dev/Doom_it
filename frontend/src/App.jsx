@@ -100,11 +100,37 @@ function AppContent() {
       <main className="flex-1">
         <ErrorBoundary>
           <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage user={user} timerState={timerState} />} />
+            {/* Public or Role-Redirected Routes */}
+            <Route
+              path="/"
+              element={
+                user ? (
+                  user.role === 'ADMIN' ? (
+                    <Navigate to="/admin/dashboard" replace />
+                  ) : (
+                    <Navigate to="/levels" replace />
+                  )
+                ) : (
+                  <LandingPage user={user} timerState={timerState} />
+                )
+              }
+            />
             <Route path="/rules" element={<RulesPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage user={user} />} />
-            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/login"
+              element={
+                user ? (
+                  user.role === 'ADMIN' ? (
+                    <Navigate to="/admin/dashboard" replace />
+                  ) : (
+                    <Navigate to="/levels" replace />
+                  )
+                ) : (
+                  <LoginPage />
+                )
+              }
+            />
 
             {/* Protected Contestant Routes */}
             <Route
@@ -125,7 +151,16 @@ function AppContent() {
             />
 
             {/* Isolated Admin Routes */}
-            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route
+              path="/admin/login"
+              element={
+                user && user.role === 'ADMIN' ? (
+                  <Navigate to="/admin/dashboard" replace />
+                ) : (
+                  <AdminLoginPage />
+                )
+              }
+            />
             <Route
               path="/admin/dashboard"
               element={

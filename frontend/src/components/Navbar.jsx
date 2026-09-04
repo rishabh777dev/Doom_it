@@ -42,13 +42,14 @@ export default function Navbar({ user, timerState }) {
   };
 
   const isActive = (path) => location.pathname === path;
+  const homeLink = user ? (user.role === 'ADMIN' ? '/admin/dashboard' : '/levels') : '/';
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 border-b border-slate-200/80 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 select-none group">
+        <Link to={homeLink} className="flex items-center gap-2.5 sm:gap-3 select-none group">
           <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-brand-blue flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform shrink-0">
             <Shield className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
           </div>
