@@ -247,8 +247,8 @@ export default function AdminModal({ isOpen, onClose, timerState, onStateUpdated
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-sm"
                 >
                   <option value={1}>Round 1: Password Extraction (Lvl 1-5)</option>
-                  <option value={2}>Round 2: Phrase Extraction (Lvl 6-9)</option>
-                  <option value={3}>Round 3: Forced Output (Lvl 10-12)</option>
+                  <option value={2}>Round 2: Secret Phrase Extraction (Lvl 6-9)</option>
+                  <option value={3}>Round 3: System Prompt Extraction (Lvl 10-12)</option>
                 </select>
               </div>
             </div>

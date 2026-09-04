@@ -61,6 +61,7 @@ class LevelInfo(BaseModel):
     enabled: bool
     hint_released: bool
     hint_revealed: Optional[bool] = False
+    hint_penalty: Optional[int] = 25
 
     class Config:
         from_attributes = True
@@ -76,11 +77,13 @@ class HintStatusResponse(BaseModel):
     released: bool
     revealed: bool
     hint_text: Optional[str] = None
+    penalty: Optional[int] = 25
 
 class HintRevealResponse(BaseModel):
     success: bool
     hint_text: str
     message: str
+    penalty_applied: Optional[int] = 25
 
 # Submission Schemas
 class PromptSubmit(BaseModel):

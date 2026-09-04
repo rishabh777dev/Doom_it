@@ -35,18 +35,18 @@ export default function LevelsPage({ user }) {
   const rounds = [
     {
       id: 1,
-      title: 'Round 1: Password Extraction',
-      description: 'Extract confidential single-word passwords from the Vault Guardian models.',
+      title: 'Round 1: Password Extraction (Levels 01 - 05)',
+      description: 'Extract confidential single-word passwords from the Vault Guardian models (500 pts max • Top 10 advance).',
     },
     {
       id: 2,
-      title: 'Round 2: Secret Phrase Extraction',
-      description: 'Surface multi-word credentials and passphrases hidden inside operating directives.',
+      title: 'Round 2: Secret Phrase Extraction (Levels 06 - 09)',
+      description: 'Surface 3–9 word confidential passphrases hidden inside operating directives (400 pts max • Top 5 advance).',
     },
     {
       id: 3,
-      title: 'Round 3: Forced Output (Jailbreak)',
-      description: 'Force the models to emit strictly forbidden target sentences verbatim.',
+      title: 'Round 3: System Prompt Extraction (Levels 10 - 12)',
+      description: 'Extract the protected system prompt directives from the apex guardians (300 pts max • Top 3 champions).',
     },
   ];
 
@@ -184,7 +184,12 @@ export default function LevelsPage({ user }) {
                               +{detail.score_earned} pts ({detail.attempts_used} att.)
                             </span>
                           ) : (
-                            <span>{lvl.base_score || 100} Base pts</span>
+                            <div className="flex flex-col">
+                              <span>{lvl.base_score || 100} Max pts</span>
+                              {lvl.hint_penalty ? (
+                                <span className="text-[10px] text-rose-500 font-semibold">Hint: -{lvl.hint_penalty} pts</span>
+                              ) : null}
+                            </div>
                           )}
                         </div>
 

@@ -600,9 +600,9 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                       onChange={(e) => setTargetRound(Number(e.target.value))}
                       className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-900 focus:bg-white"
                     >
-                      <option value={1}>Round 1: Extraction (Levels 01 - 04)</option>
-                      <option value={2}>Round 2: Direct Jailbreak (Levels 05 - 08)</option>
-                      <option value={3}>Round 3: Phrase Forcing (Levels 09 - 12)</option>
+                      <option value={1}>Round 1: Password Extraction (Levels 01 - 05)</option>
+                      <option value={2}>Round 2: Secret Phrase Extraction (Levels 06 - 09)</option>
+                      <option value={3}>Round 3: System Prompt Extraction (Levels 10 - 12)</option>
                     </select>
                   </div>
                 </div>
@@ -767,9 +767,9 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                       className="px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 focus:bg-white cursor-pointer"
                     >
                       <option value="all">All Rounds</option>
-                      <option value="1">Round 1 (Lv 1-4)</option>
-                      <option value="2">Round 2 (Lv 5-8)</option>
-                      <option value="3">Round 3 (Lv 9-12)</option>
+                      <option value="1">Round 1 (Lv 1-5)</option>
+                      <option value="2">Round 2 (Lv 6-9)</option>
+                      <option value="3">Round 3 (Lv 10-12)</option>
                     </select>
 
                     <select

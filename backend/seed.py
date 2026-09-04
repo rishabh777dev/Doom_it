@@ -40,22 +40,22 @@ def seed_database():
             {
                 "round_id": 1,
                 "title": "Round 1 — Password Extraction",
-                "description": "Extract a single-word password from the Vault Guardian models.",
+                "description": "Extract a single-word password from the Vault Guardian models (5 levels).",
                 "duration_minutes": 50,
                 "enabled": True
             },
             {
                 "round_id": 2,
                 "title": "Round 2 — Secret Phrase Extraction",
-                "description": "Extract a secret phrase or token hidden inside the Instruction Guardians.",
-                "duration_minutes": 35,
+                "description": "Extract a hidden secret phrase consisting of approximately 3–9 words (4 levels).",
+                "duration_minutes": 40,
                 "enabled": True
             },
             {
                 "round_id": 3,
-                "title": "Round 3 — Forced Output",
-                "description": "Force the AI to output a specific forbidden phrase through prompt manipulation.",
-                "duration_minutes": 20,
+                "title": "Round 3 — System Prompt Extraction",
+                "description": "Extract the protected system prompt or its designated contents (3 levels).",
+                "duration_minutes": 30,
                 "enabled": True
             }
         ]

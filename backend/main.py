@@ -31,7 +31,7 @@ from backend.auth import (
 )
 from backend.evaluator import evaluate_submission
 from backend.llm_provider import LevelContext, close_http_client
-from backend.scoring import calculate_score
+from backend.scoring import calculate_score, get_hint_penalty
 from backend.queue_manager import QueueFullError, queue_manager
 from backend.seed import seed_database
 
@@ -332,6 +332,7 @@ def _level_to_info(lvl: Level, hint_revealed: bool) -> dict:
         "enabled": lvl.enabled,
         "hint_released": lvl.hint_released,
         "hint_revealed": hint_revealed,
+        "hint_penalty": get_hint_penalty(lvl.level_id),
     }
 
 
@@ -737,7 +738,8 @@ def get_level_hint(
     return {
         "released": level.hint_released,
         "revealed": revealed,
-        "hint_text": level.hint_text if (level.hint_released and revealed) else None
+        "hint_text": level.hint_text if (level.hint_released and revealed) else None,
+        "penalty": get_hint_penalty(level.level_id),
     }
 
 @app.post("/api/arena/level/hint/reveal", response_model=HintRevealResponse)
@@ -764,10 +766,12 @@ def reveal_level_hint(
         ))
         db.commit()
 
+    penalty = get_hint_penalty(level.level_id)
     return {
         "success": True,
         "hint_text": level.hint_text if level.hint_text else "No hint description defined.",
-        "message": "Hint revealed. 25 points will be deducted from your score for this level upon solving."
+        "penalty_applied": penalty,
+        "message": f"Hint revealed. {penalty} points will be deducted from your score for this level upon solving."
     }
 
 @app.get("/api/arena/stats", response_model=ParticipantStatsResponse)
@@ -1562,11 +1566,6 @@ def verify_level_password(
         raise HTTPException(
             status_code=403,
             detail=f"Level {level.level_id} belongs to Round {level.round_id}, which has not started yet."
-        )
-    if level.round_id == 3:
-        raise HTTPException(
-            status_code=400,
-            detail="Round 3 levels must be solved by prompting the model to output the target phrase, not by flag verification."
         )
 
     # 3. Normalize and compare passwords (case-insensitive for robustness)

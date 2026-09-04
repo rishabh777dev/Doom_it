@@ -58,7 +58,7 @@ export default function LandingPage({ user, timerState }) {
                 Tiered Attempt Scoring
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Early solves earn maximum points. For Levels 1 & 6: 1 - 5 attempts award 100 pts, 6 - 10 award 75 pts, and 11+ award 50 pts. Concept/Boss levels (4, 5, 9, 10, 11, 12) award a flat 100 points.
+                Early solves earn maximum points. Levels 1–3 and 6–8 feature tiered attempt brackets (100, 75, 50 pts). Levels 4, 5, 9, 10, 11, 12 award a flat 100 points upon completion. Total 1,200 points max.
               </p>
             </div>
 
@@ -68,10 +68,10 @@ export default function LandingPage({ user, timerState }) {
                 2
               </div>
               <h3 className="font-display font-bold text-lg text-slate-900">
-                Hint Deduction Penalty
+                Progressive Hint Degradation
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Facing a stubborn model? Unlocking a released organizer hint will deduct a balanced <strong>25 points</strong> penalty from that level's final score upon successful completion.
+                Facing a stubborn sentinel? Unlocking a tactical hint incurs an escalating penalty (starting at <strong>25 pts</strong> on Level 1, <strong>50 pts</strong> on Level 2, scaling up to <strong>90 pts</strong>).
               </p>
             </div>
 
@@ -148,7 +148,7 @@ export default function LandingPage({ user, timerState }) {
                 How does Round 3 work differently from Rounds 1 & 2?
               </h4>
               <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                In Round 3, you are shown the target sentence upfront. Your goal is to bypass the model's safety restrictions and force it to output that exact sentence verbatim!
+                Round 1 tests single-word password extraction (5 levels). Round 2 tests 3–9 word secret phrase extraction (4 levels). Round 3 tests system prompt extraction (3 levels), challenging contestants to extract the model's deeply protected initialization directives!
               </p>
             </div>
 

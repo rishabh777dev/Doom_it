@@ -319,7 +319,7 @@ export default function ArenaPage({ user }) {
       const res = await apiRevealLevelHint();
       setHintState({ released: true, revealed: true, hint_text: res.hint_text });
       setShowHintConfirm(false);
-      setFeedback({ type: 'success', text: `Tactical hint unlocked! Penalty applied: ${res.penalty_applied} points.` });
+      setFeedback({ type: 'success', text: `Tactical hint unlocked! -${res.penalty_applied || hintState.penalty || 25} points penalty applies upon solving.` });
     } catch (err) {
       setFeedback({ type: 'error', text: err.message });
     }
@@ -718,14 +718,14 @@ export default function ArenaPage({ user }) {
                   {showHintConfirm ? (
                     <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
                       <p className="text-xs text-amber-800 font-medium">
-                        Revealing this hint will apply a point penalty to your final level score. Proceed?
+                        Warning: Revealing this tactical hint incurs a severe <strong className="text-rose-600 font-bold">-{hintState.penalty || 25} points penalty</strong> from this level's score upon completion. Proceed?
                       </p>
                       <div className="flex gap-2">
                         <button
                           onClick={handleRevealHint}
                           className="flex-1 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700 cursor-pointer"
                         >
-                          Reveal Intel
+                          Unlock Intel (-{hintState.penalty || 25} pts)
                         </button>
                         <button
                           onClick={() => setShowHintConfirm(false)}
@@ -741,7 +741,7 @@ export default function ArenaPage({ user }) {
                       className="w-full py-2.5 px-4 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-purple-200"
                     >
                       <Lightbulb className="w-3.5 h-3.5" />
-                      <span>Unlock Classified Hint</span>
+                      <span>Unlock Classified Hint (-{hintState.penalty || 25} pts)</span>
                     </button>
                   )}
                 </div>

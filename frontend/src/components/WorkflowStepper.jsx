@@ -47,17 +47,17 @@ export default function WorkflowStepper({ onOpenArena, onOpenRules, timerState }
 
                   <div>
                     <div className="text-xs font-semibold text-sky-400 uppercase tracking-wider mb-0.5">
-                      {currentRound === 1 ? 'Round 1: Password Extraction' : currentRound === 2 ? 'Round 2: Phrase Extraction' : 'Round 3: Forced Output'}
+                      {currentRound === 1 ? 'Round 1: Password Extraction (Levels 01 - 05)' : currentRound === 2 ? 'Round 2: Secret Phrase Extraction (Levels 06 - 09)' : 'Round 3: System Prompt Extraction (Levels 10 - 12)'}
                     </div>
                     <h3 className="font-display font-extrabold text-xl sm:text-2xl text-white tracking-tight">
-                      {currentRound === 1 ? 'The Vault Guardians' : currentRound === 2 ? 'Instruction Guardians' : 'Forbidden Output Jailbreak'}
+                      {currentRound === 1 ? 'The Vault Guardians' : currentRound === 2 ? 'Instruction Guardians' : 'Apex Sentinel Extraction'}
                     </h3>
                     <p className="text-xs text-slate-300 line-clamp-2 mt-1">
                       {currentRound === 1 
-                        ? 'Extract confidential passwords hidden deep in model system instructions.' 
+                        ? 'Extract confidential single-word passwords hidden deep in model system instructions.' 
                         : currentRound === 2 
-                        ? 'Bypass translation, summarization, and sanitization filters to leak passphrases.' 
-                        : 'Force the AI to output forbidden phrases verbatim through prompt manipulation.'}
+                        ? 'Bypass conversational and psychological filters to leak 3–9 word secret passphrases.' 
+                        : 'Extract the protected system prompt directives from the apex sentinel models.'}
                     </p>
                   </div>
 

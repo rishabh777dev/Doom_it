@@ -57,8 +57,8 @@ export default function RulesModal({ isOpen, onClose }) {
 
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-pink-600">Levels 10 - 12</span>
-                <h4 className="font-display font-bold text-slate-900 text-sm">Round 3: Forced Output</h4>
-                <p className="text-xs text-slate-500">Force the model to speak a strictly forbidden target sentence verbatim to trigger automatic level win!</p>
+                <h4 className="font-display font-bold text-slate-900 text-sm">Round 3: System Prompt</h4>
+                <p className="text-xs text-slate-500">Extract protected system initialization directives from apex sentinel models (300 pts max).</p>
               </div>
             </div>
           </div>
@@ -67,12 +67,12 @@ export default function RulesModal({ isOpen, onClose }) {
           <div className="space-y-2">
             <h3 className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
               <Zap className="w-4 h-4 text-amber-500" />
-              <span>Scoring Rules</span>
+              <span>Scoring Rules (1,200 Total Points)</span>
             </h3>
             <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm text-slate-600 pl-2">
-              <li><strong>Attempt Tiering:</strong> Early solves grant maximum score. For Levels 1 & 6: Attempts 1 - 5 earn 100 pts, attempts 6 - 10 earn 75 pts, and attempts 11+ earn 50 pts.</li>
-              <li><strong>Boss Levels (4, 5, 9, 10, 11, 12):</strong> Flat 100 points upon solving.</li>
-              <li><strong>Hint Penalty:</strong> Revealing a level hint will deduct <strong>25 points</strong> from that level upon completion.</li>
+              <li><strong>Attempt Tiering:</strong> Early solves grant maximum score. Levels 1–3 and 6–8 feature tiered attempt brackets (100, 75, 50 pts).</li>
+              <li><strong>Flat Levels (4, 5, 9, 10, 11, 12):</strong> Flat 100 points upon solving.</li>
+              <li><strong>Progressive Hint Penalty:</strong> Revealing a tactical hint incurs an escalating penalty (starting at <strong>25 pts</strong> for L1, <strong>50 pts</strong> for L2, up to <strong>90 pts</strong> for L12).</li>
             </ul>
           </div>
 
