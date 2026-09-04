@@ -948,7 +948,9 @@ def admin_list_levels(
             "hint_released": l.hint_released,
             "hint_revealed": False,
             "hint_text": l.hint_text,
-            "secret": l.secret
+            "secret": l.secret,
+            "system_prompt": l.system_prompt,
+            "target_phrase": l.target_phrase
         } for l in levels
     ]
 
@@ -961,7 +963,7 @@ def admin_update_level_secret(
     db: Session = Depends(get_db)
 ):
     """
-    Live-update a level's hidden secret, target phrase, system prompt, and/or
+    Live-update a level's title, objective, hidden secret, target phrase, system prompt, and/or
     hint text. Changes take effect on the next submission — no restart needed.
     Only fields that are explicitly provided (non-None) are updated.
     """
@@ -970,6 +972,12 @@ def admin_update_level_secret(
         raise HTTPException(status_code=404, detail=f"Level {level_id} not found.")
 
     changed_fields = []
+    if data.title is not None:
+        lvl.title = data.title
+        changed_fields.append("title")
+    if data.objective is not None:
+        lvl.objective = data.objective
+        changed_fields.append("objective")
     if data.secret is not None:
         lvl.secret = data.secret
         changed_fields.append("secret")

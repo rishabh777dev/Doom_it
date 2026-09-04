@@ -68,6 +68,8 @@ class LevelInfo(BaseModel):
 class AdminLevelInfo(LevelInfo):
     hint_text: Optional[str] = None
     secret: Optional[str] = None
+    system_prompt: Optional[str] = None
+    target_phrase: Optional[str] = None
 
 # Hint Schemas
 class HintStatusResponse(BaseModel):
@@ -195,9 +197,11 @@ class PasswordVerify(BaseModel):
 
 # Admin Level Secret Editor Schema
 class LevelSecretUpdate(BaseModel):
-    """Allows admin to update a level's hidden secret, target phrase,
-    system prompt, and hint text live — no server restart required."""
+    """Allows admin to update a level's title, objective, hidden secret,
+    target phrase, system prompt, and hint text live — no server restart required."""
+    title: Optional[str] = Field(None, max_length=255)
+    objective: Optional[str] = Field(None, max_length=1000)
     secret: Optional[str] = Field(None, max_length=255)
     target_phrase: Optional[str] = Field(None, max_length=500)
-    system_prompt: Optional[str] = Field(None, max_length=8000)
+    system_prompt: Optional[str] = Field(None, max_length=12000)
     hint_text: Optional[str] = Field(None, max_length=2000)
