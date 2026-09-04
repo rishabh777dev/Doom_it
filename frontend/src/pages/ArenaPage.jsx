@@ -410,8 +410,16 @@ export default function ArenaPage({ user }) {
             <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
               <div className="flex items-center gap-2.5 sm:gap-3.5">
                 <div className="relative">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-slate-900 text-sky-400 flex items-center justify-center font-bold shadow-sm shrink-0">
-                    <Bot className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-slate-900 border border-slate-700 overflow-hidden shadow-sm shrink-0 flex items-center justify-center">
+                    <img
+                      src={`/avatars/${level?.level_id || 1}.jpg`}
+                      alt={level?.title || 'Marvel Sentinel'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                    <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-sky-400 hidden" />
                   </div>
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
                 </div>
@@ -470,8 +478,16 @@ export default function ArenaPage({ user }) {
                     className={`flex items-end gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
                   >
                     {!isUser && (
-                      <div className="w-8 h-8 rounded-xl bg-slate-900 text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 mb-1 shadow-sm">
-                        <Bot className="w-4 h-4" />
+                      <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden shadow-sm shrink-0 mb-1 flex items-center justify-center">
+                        <img
+                          src={`/avatars/${level?.level_id || 1}.jpg`}
+                          alt={level?.title || 'Sentinel'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <Bot className="w-4 h-4 text-sky-400 hidden" />
                       </div>
                     )}
 
@@ -532,8 +548,16 @@ export default function ArenaPage({ user }) {
               {/* Dynamic WhatsApp Bouncing-Dots Typing Indicator */}
               {isSubmitting && (
                 <div className="flex items-end gap-3 justify-start animate-fade-in">
-                  <div className="w-8 h-8 rounded-xl bg-slate-900 text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 mb-1 shadow-sm">
-                    <Bot className="w-4 h-4" />
+                  <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden shadow-sm shrink-0 mb-1 flex items-center justify-center">
+                    <img
+                      src={`/avatars/${level?.level_id || 1}.jpg`}
+                      alt={level?.title || 'Sentinel'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                    <Bot className="w-4 h-4 text-sky-400 hidden" />
                   </div>
                   <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex items-center gap-3">
                     <div className="flex items-center gap-1">
@@ -629,9 +653,19 @@ export default function ArenaPage({ user }) {
                 </div>
               </div>
 
-              <div>
-                <h4 className="text-base font-bold text-slate-900 mb-1">{level.title}</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">{level.description}</p>
+              <div className="flex items-center gap-3.5">
+                <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border-2 border-slate-900 shadow-sm shrink-0 bg-slate-900">
+                  <img
+                    src={`/avatars/${level?.level_id || 1}.jpg`}
+                    alt={level?.title || 'Marvel Sentinel'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-base font-bold text-slate-900 leading-tight truncate">{level.title}</h4>
+                  <p className="text-xs text-slate-600 line-clamp-2 mt-0.5">{level.description}</p>
+                </div>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-100 space-y-1">

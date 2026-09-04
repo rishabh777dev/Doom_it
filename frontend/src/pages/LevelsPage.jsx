@@ -177,10 +177,25 @@ export default function LevelsPage({ user }) {
                             )}
                           </div>
 
-                          <h3 className="font-display font-extrabold text-lg text-slate-900">
-                            {lvl.title}
-                          </h3>
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                          <div className="flex items-center gap-3.5 mb-2.5">
+                            <div className="w-12 h-12 rounded-2xl overflow-hidden border border-slate-300 shadow-sm shrink-0 bg-slate-900">
+                              <img
+                                src={`/avatars/${lvl.level_id}.jpg`}
+                                alt={lvl.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-display font-extrabold text-base text-slate-900 leading-snug truncate">
+                                {lvl.title}
+                              </h3>
+                              <span className="text-[11px] font-semibold text-brand-blue">
+                                Sentinel Protocol
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500 line-clamp-2">
                             {lvl.description}
                           </p>
                         </div>

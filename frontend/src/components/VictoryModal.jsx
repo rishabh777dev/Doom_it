@@ -11,12 +11,22 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
         {/* Ambient Top Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 bg-amber-400/20 blur-3xl rounded-full pointer-events-none" />
 
-        {/* Floating Trophy Badge */}
-        <div className="mx-auto mb-5 w-20 h-20 rounded-3xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center shadow-lg relative">
-          <Trophy className="w-10 h-10 text-amber-600 animate-bounce" />
-          <span className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white shadow">
-            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-          </span>
+        {/* Floating Trophy & Defeated Sentinel */}
+        <div className="mx-auto mb-5 flex items-center justify-center gap-3 relative">
+          <div className="w-16 h-16 rounded-2xl bg-slate-900 border-2 border-emerald-500 overflow-hidden shadow-lg relative shrink-0">
+            <img
+              src={`/avatars/${solvedLevel?.level_id || 1}.jpg`}
+              alt={solvedLevel?.title || 'Sentinel'}
+              className="w-full h-full object-cover"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+            <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white shadow">
+              <CheckCircle2 className="w-3 h-3 text-white" />
+            </span>
+          </div>
+          <div className="w-16 h-16 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center shadow-lg shrink-0">
+            <Trophy className="w-8 h-8 text-amber-600 animate-bounce" />
+          </div>
         </div>
 
         {/* Banner Titles */}
@@ -47,8 +57,13 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
         {/* Next Target Preview Card */}
         {nextLevel ? (
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-6 text-left flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-slate-900 text-sky-400 flex items-center justify-center font-bold shrink-0">
-              <ShieldCheck className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-xl bg-slate-900 overflow-hidden border border-slate-300 shrink-0">
+              <img
+                src={`/avatars/${nextLevel.level_id}.jpg`}
+                alt={nextLevel.title}
+                className="w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Next Challenge Level</span>
