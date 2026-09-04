@@ -1236,16 +1236,19 @@ def admin_toggle_hint_release(
 
 @app.get("/api/admin/submissions", response_model=List[AdminSubmissionLog])
 def admin_list_submissions(
-    limit: int = 500,
+    limit: int = 2000,
+    team_id: Optional[str] = None,
     current_admin: Team = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    limit = max(1, min(limit, 5000))
+    limit = max(1, min(limit, 10000))
 
-    # joinedload avoids one extra SELECT per row for log.team.team_name.
+    query = db.query(PromptLog).options(joinedload(PromptLog.team))
+    if team_id:
+        query = query.filter(PromptLog.team_id == team_id)
+
     logs = (
-        db.query(PromptLog)
-        .options(joinedload(PromptLog.team))
+        query
         .order_by(desc(PromptLog.created_at))
         .limit(limit)
         .all()
@@ -1281,6 +1284,7 @@ def admin_list_submissions(
 
         submissions_details.append(AdminSubmissionLog(
             id=log.id,
+            team_id=log.team_id,
             username=log.team.team_name if log.team else "deleted",
             team_name=log.team.team_name if log.team else "deleted",
             level_id=log.level,
@@ -1679,13 +1683,13 @@ def admin_modify_team_score(
 
 @app.get("/api/admin/logs", response_model=List[AdminSubmissionLog])
 def get_admin_logs(
-    limit: int = 500,
+    limit: int = 2000,
+    team_id: Optional[str] = None,
     current_admin: Team = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    # Alias of /api/admin/submissions. The previous body called an undefined
-    # `get_admin_submissions`, so this route raised NameError on every request.
-    return admin_list_submissions(limit=limit, current_admin=current_admin, db=db)
+    # Alias of /api/admin/submissions.
+    return admin_list_submissions(limit=limit, team_id=team_id, current_admin=current_admin, db=db)
 
 @app.post("/api/admin/competition/start", response_model=TimerResponse)
 def admin_start_competition(

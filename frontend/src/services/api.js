@@ -240,8 +240,9 @@ export const apiToggleHintRelease = async (levelId, released) => {
   return handleResponse(res);
 };
 
-export const apiGetAdminSubmissions = async (limit = 200) => {
-  const res = await fetch(`${BASE_URL}/api/admin/submissions?limit=${limit}`, {
+export const apiGetAdminSubmissions = async (limit = 2000, teamId = '') => {
+  const query = teamId ? `limit=${limit}&team_id=${encodeURIComponent(teamId)}` : `limit=${limit}`;
+  const res = await fetch(`${BASE_URL}/api/admin/submissions?${query}`, {
     headers: getHeaders(),
   });
   return handleResponse(res);

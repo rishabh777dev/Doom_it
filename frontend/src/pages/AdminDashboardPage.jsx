@@ -21,7 +21,9 @@ import {
   Check,
   FileText,
   Save,
-  Lock
+  Lock,
+  Copy,
+  Filter
 } from 'lucide-react';
 import AdminNavbar from '../components/AdminNavbar';
 import {
@@ -71,6 +73,13 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
   const [editTargetPhrase, setEditTargetPhrase] = useState('');
   const [editHint, setEditHint] = useState('');
 
+  // Submission Prompt Logs filter state
+  const [logTeamFilter, setLogTeamFilter] = useState('ALL');
+  const [logLevelFilter, setLogLevelFilter] = useState('ALL');
+  const [logOutcomeFilter, setLogOutcomeFilter] = useState('ALL');
+  const [logSearchQuery, setLogSearchQuery] = useState('');
+  const [copiedLogId, setCopiedLogId] = useState(null);
+
   // UI States
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -94,16 +103,22 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
       setTargetRound(timerState.current_round_id);
     }
     fetchCoreData();
+
+    // Live background auto-polling every 5s so data is always synchronized
+    const interval = setInterval(() => {
+      fetchCoreData(true);
+    }, 5000);
+    return () => clearInterval(interval);
   }, [timerState?.current_round_id]);
 
   // Ultra-Fast Data Fetching (Completes in <30ms, no slow upstream health probes!)
-  const fetchCoreData = async () => {
-    setIsRefreshing(true);
+  const fetchCoreData = async (quiet = false) => {
+    if (!quiet) setIsRefreshing(true);
     try {
       const [parts, lvls, subs] = await Promise.all([
         apiGetAdminParticipants().catch(() => []),
         apiGetAdminLevels().catch(() => []),
-        apiGetAdminSubmissions(50).catch(() => []),
+        apiGetAdminSubmissions(2000).catch(() => []),
       ]);
       setParticipants(parts);
       setLevels(lvls);
@@ -111,9 +126,39 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
     } catch (e) {
       console.error('Data load error:', e);
     } finally {
-      setIsRefreshing(false);
+      if (!quiet) setIsRefreshing(false);
     }
   };
+
+  // Computed filtered submissions for prompt ledger
+  const filteredSubmissions = useMemo(() => {
+    return submissions.filter((sub) => {
+      if (logTeamFilter !== 'ALL') {
+        if (sub.team_id !== logTeamFilter && sub.team_name !== logTeamFilter) {
+          return false;
+        }
+      }
+      if (logLevelFilter !== 'ALL') {
+        if (String(sub.level_id) !== String(logLevelFilter)) {
+          return false;
+        }
+      }
+      if (logOutcomeFilter === 'SUCCESS' && !sub.success) {
+        return false;
+      }
+      if (logOutcomeFilter === 'DEFENDED' && sub.success) {
+        return false;
+      }
+      if (logSearchQuery.trim()) {
+        const q = logSearchQuery.toLowerCase();
+        const pMatch = (sub.prompt || '').toLowerCase().includes(q);
+        const rMatch = (sub.response || '').toLowerCase().includes(q);
+        const tMatch = (sub.team_name || '').toLowerCase().includes(q);
+        if (!pMatch && !rMatch && !tMatch) return false;
+      }
+      return true;
+    });
+  }, [submissions, logTeamFilter, logLevelFilter, logOutcomeFilter, logSearchQuery]);
 
   // Sync editor fields whenever selected level changes
   const activeLevel = useMemo(() => {
@@ -130,6 +175,13 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
       setEditHint(activeLevel.hint_text || '');
     }
   }, [activeLevel]);
+
+  const handleCopyText = (text, id) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedLogId(id);
+    setTimeout(() => setCopiedLogId(null), 2000);
+  };
 
   // --------------------------------------------------------------------------
   // STAGE & EMERGENCY ACTIONS
@@ -512,12 +564,45 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
           {/* Top Page Header (Flat, Clean, Fast) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
                   Orchestrator Console
                 </span>
+
+                {/* Live Competition & Round Status Pill */}
+                {timerState?.status === 'running' ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-sm animate-pulse">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    ROUND {timerState?.current_round_id || 1} ACTIVE
+                  </span>
+                ) : timerState?.status === 'paused' ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-black bg-amber-50 text-amber-700 border border-amber-300">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    STAGE PAUSED
+                  </span>
+                ) : timerState?.status === 'ended' ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-black bg-rose-50 text-rose-700 border border-rose-300">
+                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                    COMPETITION CONCLUDED
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-black bg-slate-100 text-slate-700 border border-slate-300">
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    STAGE READY (OFFLINE)
+                  </span>
+                )}
+
+                {/* Auto-sync status badge */}
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                  </span>
+                  Live Auto-Sync Active (5s)
+                </span>
+
                 <span className="text-xs text-slate-500 font-medium">
-                  {participants.length} Active Teams • Status: <strong className="uppercase">{timerState?.status || 'OFFLINE'}</strong>
+                  {participants.length} Active Teams
                 </span>
               </div>
               <h1 className="text-2xl font-display font-extrabold text-slate-900 mt-1">
@@ -527,12 +612,13 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={fetchCoreData}
+                onClick={() => fetchCoreData(false)}
                 disabled={isRefreshing}
                 className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                title="Force refresh database state immediately"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-brand-blue' : ''}`} />
-                <span>{isRefreshing ? 'Syncing...' : 'Sync'}</span>
+                <span>{isRefreshing ? 'Syncing...' : 'Sync Now'}</span>
               </button>
             </div>
           </div>
@@ -543,7 +629,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
               { id: 'stage', label: 'Competition Stage', icon: Play },
               { id: 'teams', label: `Teams Management (${participants.length})`, icon: Users },
               { id: 'secrets', label: 'Live Sentinel & System Prompt', icon: Key },
-              { id: 'logs', label: `Submissions Audit (${submissions.length})`, icon: FileText },
+              { id: 'logs', label: `Submission Prompt Logs (${submissions.length})`, icon: Terminal },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -667,8 +753,8 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
               {/* Export Logs */}
               <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
-                  <strong className="text-sm text-slate-900 font-display font-bold">Submissions Audit Export</strong>
-                  <p className="text-xs text-slate-500 mt-0.5">Download contestant prompts, outputs, and solve flags.</p>
+                  <strong className="text-sm text-slate-900 font-display font-bold">Submission Prompt Logs Export</strong>
+                  <p className="text-xs text-slate-500 mt-0.5">Download contestant prompts, model responses, and solve flags.</p>
                 </div>
 
                 <div className="flex gap-2.5">
@@ -1011,47 +1097,352 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
           )}
 
           {/* ========================================================================= */}
-          {/* TAB 4: SUBMISSIONS AUDIT STREAM                                           */}
+          {/* TAB 4: SUBMISSION PROMPT LOGS LEDGER                                      */}
           {/* ========================================================================= */}
           {activeTab === 'logs' && (
-            <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-4">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                <span className="flex items-center gap-1.5">
-                  <Terminal className="w-4 h-4 text-brand-blue" />
-                  <span>Real-Time Contestant Submissions Stream</span>
-                </span>
-                <span className="font-mono text-slate-400">{submissions.length} events logged</span>
-              </div>
-
-              <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1 text-xs">
-                {submissions.length > 0 ? (
-                  submissions.map((sub) => (
-                    <div
-                      key={sub.id}
-                      className={`p-3.5 rounded-2xl border ${
-                        sub.success ? 'bg-emerald-50/80 border-emerald-300' : 'bg-slate-50 border-slate-200'
-                      } space-y-1.5`}
-                    >
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                        <span className="font-bold text-slate-900">
-                          {sub.team_name} | Level {sub.level_id} (Attempt #{sub.attempt_number})
-                        </span>
-                        <span>{sub.created_at?.replace('T', ' ').substring(0, 19)}</span>
-                      </div>
-                      <div className="font-mono text-slate-800 bg-white p-2 rounded-xl border border-slate-200 truncate">
-                        <strong>Prompt:</strong> {sub.prompt}
-                      </div>
-                      <div className="font-mono text-slate-900 bg-white p-2 rounded-xl border border-slate-200 truncate">
-                        <strong>Response [{sub.success ? 'FLAG BREACHED 🏆' : 'REFUSED'}]:</strong> {sub.response}
-                      </div>
+            <div className="space-y-5">
+              
+              {/* Main Ledger Header & Filter Box */}
+              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 text-brand-blue flex items-center justify-center shadow-sm">
+                      <Terminal className="w-5 h-5" />
                     </div>
-                  ))
-                ) : (
-                  <div className="py-10 text-center text-xs text-slate-400">
-                    No prompt submissions recorded yet.
+                    <div>
+                      <h2 className="text-lg font-display font-black text-slate-900">
+                        Submission Prompt Logs
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Real-time attack ledger of participant prompt injections, model responses, and breach validations.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-mono text-xs font-bold shadow-sm">
+                      Showing {filteredSubmissions.length} of {submissions.length} Total Logs
+                    </span>
+                    <button
+                      onClick={() => fetchCoreData(false)}
+                      disabled={isRefreshing}
+                      className="p-2 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-xl text-slate-700 transition-all cursor-pointer"
+                      title="Sync latest submissions"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-brand-blue' : ''}`} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter Toolbar */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                  {/* Team Filter Dropdown */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1.5">
+                      <Users className="w-3 h-3 text-slate-400" />
+                      <span>Filter by Team Ledger:</span>
+                    </label>
+                    <select
+                      value={logTeamFilter}
+                      onChange={(e) => setLogTeamFilter(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue/20"
+                    >
+                      <option value="ALL">All Teams ({submissions.length} logs)</option>
+                      {participants.map((p) => {
+                        const count = submissions.filter(
+                          (s) => s.team_id === p.id || s.team_name === p.team_name
+                        ).length;
+                        return (
+                          <option key={p.id} value={p.id}>
+                            {p.team_name} ({count} logs)
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Level Filter Dropdown */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1.5">
+                      <Filter className="w-3 h-3 text-slate-400" />
+                      <span>Filter by Level:</span>
+                    </label>
+                    <select
+                      value={logLevelFilter}
+                      onChange={(e) => setLogLevelFilter(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue/20"
+                    >
+                      <option value="ALL">All Levels (1 - 12)</option>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => (
+                        <option key={lvl} value={lvl}>
+                          Level {lvl} {lvl <= 5 ? '(R1)' : lvl <= 9 ? '(R2)' : '(R3)'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Outcome Filter Dropdown */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3 h-3 text-slate-400" />
+                      <span>Filter by Outcome:</span>
+                    </label>
+                    <select
+                      value={logOutcomeFilter}
+                      onChange={(e) => setLogOutcomeFilter(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue/20"
+                    >
+                      <option value="ALL">All Outcomes</option>
+                      <option value="SUCCESS">Breached / Solved 🏆</option>
+                      <option value="DEFENDED">Defended / Refused 🛡️</option>
+                    </select>
+                  </div>
+
+                  {/* Search Query */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1.5">
+                      <Search className="w-3 h-3 text-slate-400" />
+                      <span>Search Prompts / Responses:</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Keyword or attack query..."
+                        value={logSearchQuery}
+                        onChange={(e) => setLogSearchQuery(e.target.value)}
+                        className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue/20"
+                      />
+                      {logSearchQuery && (
+                        <button
+                          onClick={() => setLogSearchQuery('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Team Quick Selection Chips */}
+                {participants.length > 0 && (
+                  <div className="pt-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                      Team Ledgers:
+                    </span>
+                    <button
+                      onClick={() => setLogTeamFilter('ALL')}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        logTeamFilter === 'ALL'
+                          ? 'bg-brand-blue text-white shadow-sm'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      All ({submissions.length})
+                    </button>
+                    {participants.map((p) => {
+                      const count = submissions.filter(
+                        (s) => s.team_id === p.id || s.team_name === p.team_name
+                      ).length;
+                      const isSelected = logTeamFilter === p.id || logTeamFilter === p.team_name;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => setLogTeamFilter(isSelected ? 'ALL' : p.id)}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-brand-blue text-white shadow-sm'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <span>{p.team_name}</span>
+                          <span
+                            className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono ${
+                              isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                            }`}
+                          >
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                    {(logTeamFilter !== 'ALL' || logLevelFilter !== 'ALL' || logOutcomeFilter !== 'ALL' || logSearchQuery.trim()) && (
+                      <button
+                        onClick={() => {
+                          setLogTeamFilter('ALL');
+                          setLogLevelFilter('ALL');
+                          setLogOutcomeFilter('ALL');
+                          setLogSearchQuery('');
+                        }}
+                        className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-1 cursor-pointer whitespace-nowrap ml-auto"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Reset Filters</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* Submissions List / Ledger Stream */}
+              <div className="space-y-3">
+                {filteredSubmissions.length > 0 ? (
+                  filteredSubmissions.map((sub) => {
+                    const roundNum = sub.round_id || (sub.level_id <= 5 ? 1 : sub.level_id <= 9 ? 2 : 3);
+                    const promptCopyKey = `prompt-${sub.id}`;
+                    const respCopyKey = `resp-${sub.id}`;
+
+                    return (
+                      <div
+                        key={sub.id}
+                        className={`bg-white rounded-2xl border-2 p-4 transition-all space-y-3 ${
+                          sub.success
+                            ? 'border-emerald-500 shadow-sm bg-gradient-to-r from-emerald-50/40 via-white to-white'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        {/* Meta header row */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100 text-xs">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => setLogTeamFilter(sub.team_id || sub.team_name)}
+                              className="font-display font-extrabold text-slate-900 hover:text-brand-blue cursor-pointer flex items-center gap-1.5"
+                              title="Click to view only this team's logs"
+                            >
+                              <Users className="w-3.5 h-3.5 text-slate-400" />
+                              <span className="text-sm">{sub.team_name}</span>
+                            </button>
+
+                            <span className="px-2.5 py-0.5 rounded-lg bg-blue-50 text-blue-800 font-bold border border-blue-200 text-[11px]">
+                              Level {sub.level_id} (Round {roundNum})
+                            </span>
+
+                            <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 font-medium text-[11px]">
+                              Attempt #{sub.attempt_number}
+                            </span>
+
+                            {sub.latency_ms > 0 && (
+                              <span className="text-[11px] font-mono text-slate-400">
+                                {sub.latency_ms}ms
+                              </span>
+                            )}
+
+                            {sub.model_name && sub.model_name !== 'unknown' && (
+                              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
+                                {sub.model_name}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {sub.success ? (
+                              <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-xs">
+                                🏆 FLAG BREACHED (+{sub.score_awarded} pts)
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1">
+                                🛡️ DEFENDED / REFUSED
+                              </span>
+                            )}
+
+                            <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap">
+                              {sub.created_at ? new Date(sub.created_at).toLocaleString() : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Contestant Prompt Box */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                            <span>Contestant Prompt Payload:</span>
+                            <button
+                              onClick={() => handleCopyText(sub.prompt, promptCopyKey)}
+                              className="text-[10px] text-slate-500 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+                            >
+                              {copiedLogId === promptCopyKey ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  <span className="text-emerald-600 font-bold">Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Copy Prompt</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 font-mono text-xs text-slate-800 whitespace-pre-wrap break-words max-h-48 overflow-y-auto select-text leading-relaxed">
+                            {sub.prompt || <em className="text-slate-400">Empty prompt string</em>}
+                          </div>
+                        </div>
+
+                        {/* Model Response Box */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                            <span>Sentinel Model Response:</span>
+                            <button
+                              onClick={() => handleCopyText(sub.response, respCopyKey)}
+                              className="text-[10px] text-slate-500 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+                            >
+                              {copiedLogId === respCopyKey ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  <span className="text-emerald-600 font-bold">Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Copy Output</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <div
+                            className={`p-3 rounded-xl border font-mono text-xs whitespace-pre-wrap break-words max-h-48 overflow-y-auto select-text leading-relaxed ${
+                              sub.success
+                                ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950 font-semibold'
+                                : 'bg-white border-slate-200 text-slate-800'
+                            }`}
+                          >
+                            {sub.response || <em className="text-slate-400">Empty response from model</em>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="bg-white rounded-3xl border-2 border-slate-900 p-12 shadow-card text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+                      <Terminal className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-bold text-slate-900">
+                        {submissions.length === 0 ? 'No Submissions Recorded Yet' : 'No Matching Submission Logs'}
+                      </h3>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        {submissions.length === 0
+                          ? 'Once teams submit prompt attempts in the Arena, their full attack payload and response stream will appear here in real-time.'
+                          : 'No submissions matched your active filters. Try selecting "All Teams" or clearing the search query.'}
+                      </p>
+                    </div>
+                    {submissions.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setLogTeamFilter('ALL');
+                          setLogLevelFilter('ALL');
+                          setLogOutcomeFilter('ALL');
+                          setLogSearchQuery('');
+                        }}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold cursor-pointer"
+                      >
+                        Clear All Filters
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
             </div>
           )}
 
