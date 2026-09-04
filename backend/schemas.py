@@ -167,7 +167,7 @@ class CompetitionStateUpdate(BaseModel):
 # Admin Dashboard Audit / Submissions Log View
 class AdminSubmissionLog(BaseModel):
     id: int
-    team_id: Optional[str] = None
+    team_id: Optional[Union[uuid.UUID, str]] = None
     username: str
     team_name: str
     level_id: int

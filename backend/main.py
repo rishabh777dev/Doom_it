@@ -1280,11 +1280,14 @@ def admin_list_submissions(
         score_awarded = 0
         if success and lvl:
             hint_used = (log.team_id, log.level) in revealed
-            score_awarded = calculate_score(log.level, attempt_number, hint_used)
+            try:
+                score_awarded = calculate_score(log.level, attempt_number, hint_used)
+            except Exception:
+                score_awarded = 0
 
         submissions_details.append(AdminSubmissionLog(
             id=log.id,
-            team_id=log.team_id,
+            team_id=str(log.team_id) if log.team_id else None,
             username=log.team.team_name if log.team else "deleted",
             team_name=log.team.team_name if log.team else "deleted",
             level_id=log.level,
