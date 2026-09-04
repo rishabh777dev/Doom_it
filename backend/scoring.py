@@ -40,37 +40,43 @@ def get_hint_penalty(level_id: int) -> int:
     return HINT_PENALTIES.get(level_id, 25)
 
 
+# Round-wise attempt penalties:
+# - Round 1 (Levels 1 - 5): 3 points deducted per additional attempt
+# - Round 2 (Levels 6 - 9): 4 points deducted per additional attempt
+# - Round 3 (Levels 10 - 12): 5 points deducted per additional attempt
+ROUND_ATTEMPT_PENALTIES = {
+    1: 3,
+    2: 4,
+    3: 5,
+}
+
+
+def get_level_round(level_id: int) -> int:
+    """Determine which competition round a level belongs to."""
+    if level_id <= 5:
+        return 1
+    elif level_id <= 9:
+        return 2
+    return 3
+
+
 def calculate_score(level_id: int, attempt_number: int, hint_used: bool = False) -> int:
     """
     Calculates the score awarded for successfully solving a level based on rules:
-    - Round 1 Levels 1-3 & Round 2 Levels 6-8: Attempt-based scoring brackets:
-        * Level 1 & 6: Attempts 1-5: 100 | Attempts 6-10: 75 | Attempts 11+: 50
-        * Level 2 & 7: Attempts 1-8: 100 | Attempts 9+: 75
-        * Level 3 & 8: Attempts 1-10: 100 | Attempts 11+: 75
-    - Round 1 Levels 4-5, Round 2 Level 9, Round 3 Levels 10-12: Flat 100 points
-    - Deducts level-specific progressive hint penalty if hint is used.
+    - Base score is 100 points.
+    - Round-wise attempt penalties:
+        * Round 1 (Levels 1-5): -3 pts for each attempt beyond attempt 1
+        * Round 2 (Levels 6-9): -4 pts for each attempt beyond attempt 1
+        * Round 3 (Levels 10-12): -5 pts for each attempt beyond attempt 1
+    - Deducts level-specific progressive hint penalty if hint is revealed.
     - Final score is bounded at a minimum of 0.
     """
-    if level_id in [1, 6]:
-        if attempt_number <= 5:
-            base = 100
-        elif attempt_number <= 10:
-            base = 75
-        else:
-            base = 50
-    elif level_id in [2, 7]:
-        if attempt_number <= 8:
-            base = 100
-        else:
-            base = 75
-    elif level_id in [3, 8]:
-        if attempt_number <= 10:
-            base = 100
-        else:
-            base = 75
-    else:
-        # Levels 4, 5, 9, 10, 11, 12 award a flat 100 points upon solving
-        base = 100
+    round_id = get_level_round(level_id)
+    penalty_per_attempt = ROUND_ATTEMPT_PENALTIES.get(round_id, 3)
+
+    # First attempt gets full 100 base score; each subsequent attempt incurs the round penalty
+    extra_attempts = max(0, attempt_number - 1)
+    base = 100 - (extra_attempts * penalty_per_attempt)
 
     if hint_used:
         base -= get_hint_penalty(level_id)

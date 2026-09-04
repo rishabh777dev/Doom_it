@@ -4,7 +4,11 @@ from typing import Optional
 from urllib.parse import quote_plus
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
-from supabase import create_client, Client
+try:
+    from supabase import create_client, Client
+except ImportError:
+    create_client = None
+    Client = None
 
 from backend.config import settings
 
