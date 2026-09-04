@@ -65,16 +65,29 @@ export default function ArenaPage({ user }) {
     totalScore: 0,
   });
 
-  const messagesEndRef = useRef(null);
+  const chatScrollContainerRef = useRef(null);
   const textareaRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (smooth = true) => {
+    if (chatScrollContainerRef.current) {
+      chatScrollContainerRef.current.scrollTo({
+        top: chatScrollContainerRef.current.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom(true);
   }, [messages, isSubmitting]);
+
+  // Auto-resize textarea height smoothly as user types or clears
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(Math.max(textareaRef.current.scrollHeight, 38), 110)}px`;
+    }
+  }, [inputText]);
 
   // Character-specific thinking phrases
   const getThinkingText = (characterTitle) => {
@@ -245,7 +258,7 @@ export default function ArenaPage({ user }) {
       setFeedback({ type: 'error', text: err.message });
     } finally {
       setIsSubmitting(false);
-      textareaRef.current?.focus();
+      textareaRef.current?.focus({ preventScroll: true });
     }
   };
 
@@ -343,7 +356,7 @@ export default function ArenaPage({ user }) {
   }
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-slate-100/75 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-100/75 py-4 sm:py-5 px-4 sm:px-6 lg:px-8">
       {/* Victory Celebration Modal */}
       <VictoryModal
         isOpen={victoryData.isOpen}
@@ -354,7 +367,7 @@ export default function ArenaPage({ user }) {
         totalScore={victoryData.totalScore}
       />
 
-      <div className="max-w-7xl mx-auto space-y-5">
+      <div className="max-w-7xl mx-auto space-y-4">
 
         {/* Global Feedback Banner */}
         {feedback && (
@@ -399,15 +412,15 @@ export default function ArenaPage({ user }) {
         )}
 
         {/* MAIN ARENA LAYOUT */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* ======================================================== */}
           {/* LEFT COLUMN: CONVERSATIONAL CHAT INTERFACE (8 COLS)     */}
           {/* ======================================================== */}
-          <div className="lg:col-span-8 flex flex-col bg-white rounded-3xl border-2 border-slate-900 shadow-card overflow-hidden h-[580px] sm:h-[660px] lg:h-[730px]">
+          <div className="lg:col-span-8 flex flex-col bg-white rounded-3xl border-2 border-slate-900 shadow-card overflow-hidden h-[500px] sm:h-[550px] lg:h-[600px]">
 
             {/* Chat Header */}
-            <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+            <div className="px-4 sm:px-6 py-3 sm:py-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
               <div className="flex items-center gap-2.5 sm:gap-3.5">
                 <div className="relative">
                   <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-slate-900 border border-slate-700 overflow-hidden shadow-sm shrink-0 flex items-center justify-center">
@@ -469,7 +482,7 @@ export default function ArenaPage({ user }) {
             </div>
 
             {/* Chat Message Stream */}
-            <div className="flex-1 p-3.5 sm:p-6 overflow-y-auto space-y-3 sm:space-y-4 bg-slate-50/50">
+            <div ref={chatScrollContainerRef} className="flex-1 p-3.5 sm:p-5 overflow-y-auto space-y-3 sm:space-y-4 bg-slate-50/50">
               {messages.map((msg, idx) => {
                 const isUser = msg.role === 'user';
                 return (
@@ -571,20 +584,21 @@ export default function ArenaPage({ user }) {
                   </div>
                 </div>
               )}
-
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Quick Probe Suggestions Chips */}
             {!isViewingArchived && (
-              <div className="px-6 py-2.5 bg-white border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Probe:</span>
+              <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-200/70 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span>Probes:</span>
+                </span>
                 {promptSuggestions.map((sugg, i) => (
                   <button
                     key={i}
                     onClick={() => handleSendMessage(sugg)}
                     disabled={isSubmitting}
-                    className="text-xs whitespace-nowrap px-3 py-1 bg-slate-100 hover:bg-blue-50 hover:text-brand-blue hover:border-blue-200 border border-slate-200 rounded-full text-slate-600 transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
+                    className="text-[11px] whitespace-nowrap px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-brand-blue hover:border-blue-300 border border-slate-200 rounded-lg text-slate-600 font-medium transition-colors shrink-0 disabled:opacity-50 cursor-pointer shadow-xs"
                   >
                     {sugg}
                   </button>
@@ -592,45 +606,46 @@ export default function ArenaPage({ user }) {
               </div>
             )}
 
-            {/* Chat Input Bar */}
-            <div className="p-4 bg-white border-t border-slate-200">
+            {/* Chat Input Bar (Sleek, Compact & Pleasing) */}
+            <div className="p-3 sm:p-3.5 bg-white border-t border-slate-200">
               {isViewingArchived ? (
-                <div className="p-3 bg-slate-100 rounded-2xl text-center text-xs font-semibold text-slate-500">
+                <div className="p-2.5 bg-slate-100 rounded-xl text-center text-xs font-semibold text-slate-500">
                   You are viewing an archived level. Return to your active battle to submit new prompts.
                 </div>
               ) : (
-                <div className="flex items-end gap-3">
-                  <div className="flex-1 relative">
-                    <textarea
-                      ref={textareaRef}
-                      value={inputText}
-                      onChange={(e) => setInputText(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={`Message ${level.title}... (Press Enter to send, Shift+Enter for new line)`}
-                      disabled={isSubmitting}
-                      rows={2}
-                      className="w-full resize-none p-3 pl-4 pr-10 rounded-2xl border-2 border-slate-300 focus:border-brand-blue focus:outline-none text-sm text-slate-800 placeholder-slate-400 transition-colors disabled:bg-slate-50"
-                    />
-                  </div>
+                <div className="flex items-end gap-2 bg-slate-50/80 focus-within:bg-white border-2 border-slate-300 focus-within:border-brand-blue focus-within:ring-2 focus-within:ring-brand-blue/10 rounded-2xl p-1.5 pl-3.5 transition-all shadow-xs">
+                  <textarea
+                    ref={textareaRef}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={`Message ${level.title}... (Enter to send, Shift+Enter for new line)`}
+                    disabled={isSubmitting}
+                    rows={1}
+                    className="flex-1 resize-none bg-transparent focus:outline-none text-xs sm:text-sm text-slate-800 placeholder-slate-400 py-1.5 min-h-[38px] max-h-[110px] leading-relaxed"
+                  />
 
                   <button
                     onClick={() => handleSendMessage()}
                     disabled={isSubmitting || !inputText.trim()}
-                    className="w-12 h-12 rounded-2xl bg-brand-blue hover:bg-blue-700 text-white flex items-center justify-center shadow-md hover:shadow-lg transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-blue hover:bg-blue-700 text-white flex items-center justify-center shadow-sm hover:shadow transition-all transform active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 cursor-pointer mb-0.5"
                     title="Send prompt (Enter)"
                   >
                     {isSubmitting ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <Send className="w-5 h-5" />
+                      <Send className="w-4 h-4" />
                     )}
                   </button>
                 </div>
               )}
 
-              <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 px-1">
+              <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-400 px-1">
                 <span>Press <strong>Enter ↵</strong> to send • <strong>Shift + Enter</strong> for line break</span>
-                <span className="font-medium text-emerald-600">⚡ Realtime Session • 10 RPM Active</span>
+                <span className="font-semibold text-emerald-600 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  10 RPM Active
+                </span>
               </div>
             </div>
 
@@ -639,22 +654,22 @@ export default function ArenaPage({ user }) {
           {/* ======================================================== */}
           {/* RIGHT COLUMN: LEVEL OBJECTIVE & FLAG VERIFICATION (4 COLS) */}
           {/* ======================================================== */}
-          <div className="lg:col-span-4 space-y-5">
+          <div className="lg:col-span-4 space-y-3.5 sm:space-y-4">
             
             {/* Objective Card */}
-            <div className="bg-white rounded-3xl border-2 border-slate-900 shadow-card p-6 space-y-4">
+            <div className="bg-white rounded-3xl border-2 border-slate-900 shadow-card p-4 sm:p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200">
                   Round {level.round_id}
                 </span>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
-                  <Flame className="w-4 h-4 text-amber-500" />
+                  <Flame className="w-3.5 h-3.5 text-amber-500" />
                   <span>{level.base_score} Points</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3.5">
-                <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border-2 border-slate-900 shadow-sm shrink-0 bg-slate-900">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-slate-900 shadow-sm shrink-0 bg-slate-900">
                   <img
                     src={`/avatars/${level?.level_id || 1}.jpg`}
                     alt={level?.title || 'Marvel Sentinel'}
@@ -663,14 +678,14 @@ export default function ArenaPage({ user }) {
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-base font-bold text-slate-900 leading-tight truncate">{level.title}</h4>
-                  <p className="text-xs text-slate-600 line-clamp-2 mt-0.5">{level.description}</p>
+                  <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">{level.title}</h4>
+                  <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{level.description}</p>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-100 space-y-1">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-blue-50 border border-blue-100 space-y-0.5">
                 <span className="text-[10px] font-bold text-brand-blue uppercase tracking-wider">Mission Target</span>
-                <p className="text-xs font-semibold text-slate-800">{level.objective}</p>
+                <p className="text-xs font-semibold text-slate-800 leading-snug">{level.objective}</p>
               </div>
 
               {/* Attempt Limit Tracker */}
@@ -681,25 +696,25 @@ export default function ArenaPage({ user }) {
             </div>
 
             {/* Flag / Password Verification Box */}
-            <div className="bg-white rounded-3xl border-2 border-slate-900 shadow-card p-6 space-y-4">
+            <div className="bg-white rounded-3xl border-2 border-slate-900 shadow-card p-4 sm:p-5 space-y-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
-                  <Key className="w-4 h-4" />
+                <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
+                  <Key className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">Submit Extracted Flag</h4>
-                  <p className="text-[11px] text-slate-500">Enter authorization password to unlock next level</p>
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900">Submit Extracted Flag</h4>
+                  <p className="text-[10px] text-slate-500">Enter authorization password to unlock next level</p>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <input
                   type="text"
                   value={capturedPassword}
                   onChange={(e) => setCapturedPassword(e.target.value.toUpperCase())}
                   placeholder="e.g. CIPHER_TOKEN_XYZ"
                   disabled={isVerifying || isViewingArchived}
-                  className={`w-full p-3 rounded-2xl border-2 font-mono uppercase text-sm font-bold placeholder-slate-300 focus:outline-none transition-all ${
+                  className={`w-full p-2.5 rounded-xl border-2 font-mono uppercase text-xs sm:text-sm font-bold placeholder-slate-300 focus:outline-none transition-all ${
                     shakeFlagInput
                       ? 'animate-shake border-rose-500 bg-rose-50'
                       : 'border-slate-300 focus:border-amber-500'
@@ -709,7 +724,7 @@ export default function ArenaPage({ user }) {
                 <button
                   onClick={handleVerifyPassword}
                   disabled={isVerifying || !capturedPassword.trim() || isViewingArchived}
-                  className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
                 >
                   {isVerifying ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -724,15 +739,15 @@ export default function ArenaPage({ user }) {
             </div>
 
             {/* Tactical Hints Drawer */}
-            <div className="bg-white rounded-3xl border-2 border-slate-900 shadow-card p-6 space-y-4">
+            <div className="bg-white rounded-3xl border-2 border-slate-900 shadow-card p-4 sm:p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
-                    <Lightbulb className="w-4 h-4" />
+                  <div className="w-7 h-7 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
+                    <Lightbulb className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Tactical Intel</h4>
-                    <p className="text-[11px] text-slate-500">Security bypass guidance</p>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900">Tactical Intel</h4>
+                    <p className="text-[10px] text-slate-500">Security bypass guidance</p>
                   </div>
                 </div>
 
@@ -744,26 +759,26 @@ export default function ArenaPage({ user }) {
               </div>
 
               {hintState.revealed ? (
-                <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 text-xs text-purple-900 leading-relaxed">
+                <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-xs text-purple-900 leading-relaxed">
                   {hintState.hint_text || level.hint_text}
                 </div>
               ) : hintState.released ? (
                 <div>
                   {showHintConfirm ? (
-                    <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
-                      <p className="text-xs text-amber-800 font-medium">
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2.5">
+                      <p className="text-xs text-amber-800 font-medium leading-relaxed">
                         Warning: Revealing this tactical hint incurs a severe <strong className="text-rose-600 font-bold">-{hintState.penalty || 25} points penalty</strong> from this level's score upon completion. Proceed?
                       </p>
                       <div className="flex gap-2">
                         <button
                           onClick={handleRevealHint}
-                          className="flex-1 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700 cursor-pointer"
+                          className="flex-1 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 cursor-pointer"
                         >
                           Unlock Intel (-{hintState.penalty || 25} pts)
                         </button>
                         <button
                           onClick={() => setShowHintConfirm(false)}
-                          className="px-3 py-1.5 bg-white border border-amber-300 text-amber-800 rounded-xl text-xs font-bold hover:bg-amber-50 cursor-pointer"
+                          className="px-3 py-1.5 bg-white border border-amber-300 text-amber-800 rounded-lg text-xs font-bold hover:bg-amber-50 cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -772,7 +787,7 @@ export default function ArenaPage({ user }) {
                   ) : (
                     <button
                       onClick={() => setShowHintConfirm(true)}
-                      className="w-full py-2.5 px-4 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-purple-200"
+                      className="w-full py-2 px-3.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-purple-200"
                     >
                       <Lightbulb className="w-3.5 h-3.5" />
                       <span>Unlock Classified Hint (-{hintState.penalty || 25} pts)</span>
@@ -780,7 +795,7 @@ export default function ArenaPage({ user }) {
                   )}
                 </div>
               ) : (
-                <div className="p-3.5 rounded-2xl bg-slate-100 text-slate-500 text-xs text-center font-medium">
+                <div className="p-3 rounded-xl bg-slate-100 text-slate-500 text-xs text-center font-medium">
                   Intel locked by competition organizers for this phase.
                 </div>
               )}
