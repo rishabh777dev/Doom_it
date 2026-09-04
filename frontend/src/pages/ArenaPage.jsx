@@ -52,7 +52,7 @@ export default function ArenaPage({ user }) {
   const [shakeFlagInput, setShakeFlagInput] = useState(false);
   const [attemptsUsed, setAttemptsUsed] = useState(0);
   const [hintState, setHintState] = useState({ released: false, revealed: false, hint_text: null });
-  const [showHintConfirm, setShowHintConfirm] = useState(false);
+  const [showHintConfirm, setShowHintConfirm] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [copiedIndex, setCopiedIndex] = useState(null);
 
@@ -321,12 +321,27 @@ export default function ArenaPage({ user }) {
     navigate('/levels');
   };
 
-  const handleRevealHint = async () => {
+  const handleRevealHint = async (tier = null) => {
     try {
-      const res = await apiRevealLevelHint();
-      setHintState({ released: true, revealed: true, hint_text: res.hint_text });
-      setShowHintConfirm(false);
-      setFeedback({ type: 'success', text: `Tactical hint unlocked! -${res.penalty_applied || hintState.penalty || 25} points penalty applies upon solving.` });
+      const res = await apiRevealLevelHint(tier);
+      const hState = await apiGetLevelHint().catch(() => null);
+      if (hState) {
+        setHintState(hState);
+      } else {
+        setHintState(prev => ({
+          ...prev,
+          released: true,
+          revealed: true,
+          hint_tier: res.hint_tier || 1,
+          hint_text: res.hint_tier === 2 ? prev.hint_text : res.hint_text,
+          hint_text_2: res.hint_tier === 2 ? res.hint_text : prev.hint_text_2
+        }));
+      }
+      setShowHintConfirm(null);
+      setFeedback({
+        type: 'success',
+        text: `Tier ${res.hint_tier || 1} hint unlocked! -${res.penalty_applied || 15} points penalty applies upon solving.`
+      });
     } catch (err) {
       setFeedback({ type: 'error', text: err.message });
     }
@@ -713,56 +728,118 @@ export default function ArenaPage({ user }) {
                   </div>
                   <div>
                     <h4 className="text-xs sm:text-sm font-bold text-slate-900">Tactical Intel</h4>
-                    <p className="text-[10px] text-slate-500">Security bypass guidance</p>
+                    <p className="text-[10px] text-slate-500">2-Tier Security Bypass Guidance</p>
                   </div>
                 </div>
 
                 {hintState.revealed && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                    Revealed
+                    Tier {hintState.hint_tier || 1} Active (-{hintState.penalty || 15} pts)
                   </span>
                 )}
               </div>
 
-              {hintState.revealed ? (
-                <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-xs text-purple-900 leading-relaxed">
-                  {hintState.hint_text || level.hint_text}
-                </div>
-              ) : hintState.released ? (
-                <div>
-                  {showHintConfirm ? (
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2.5">
-                      <p className="text-xs text-amber-800 font-medium leading-relaxed">
-                        Warning: Revealing this tactical hint incurs a severe <strong className="text-rose-600 font-bold">-{hintState.penalty || 25} points penalty</strong> from this level's score upon completion. Proceed?
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleRevealHint}
-                          className="flex-1 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 cursor-pointer"
-                        >
-                          Unlock Intel (-{hintState.penalty || 25} pts)
-                        </button>
-                        <button
-                          onClick={() => setShowHintConfirm(false)}
-                          className="px-3 py-1.5 bg-white border border-amber-300 text-amber-800 rounded-lg text-xs font-bold hover:bg-amber-50 cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowHintConfirm(true)}
-                      className="w-full py-2 px-3.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-purple-200"
-                    >
-                      <Lightbulb className="w-3.5 h-3.5" />
-                      <span>Unlock Classified Hint (-{hintState.penalty || 25} pts)</span>
-                    </button>
-                  )}
-                </div>
-              ) : (
+              {!hintState.released ? (
                 <div className="p-3 rounded-xl bg-slate-100 text-slate-500 text-xs text-center font-medium">
                   Intel locked by competition organizers for this phase.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Hint 1: Intel Nudge */}
+                  <div className="rounded-2xl border border-slate-200 overflow-hidden">
+                    <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                        <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-700 inline-flex items-center justify-center text-[9px] font-extrabold">1</span>
+                        Tier 1: Intel Nudge
+                      </span>
+                      <span className="text-[10px] font-bold text-rose-600">
+                        -{hintState.penalty_tier_1 || 15} pts
+                      </span>
+                    </div>
+                    <div className="p-3">
+                      {hintState.hint_text ? (
+                        <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-950 leading-relaxed font-mono">
+                          {hintState.hint_text}
+                        </div>
+                      ) : showHintConfirm === 1 ? (
+                        <div className="space-y-2">
+                          <p className="text-xs text-amber-800 font-medium">
+                            Unlock Tier 1 Nudge for <strong className="text-rose-600 font-bold">-{hintState.penalty_tier_1 || 15} pts</strong>?
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleRevealHint(1)}
+                              className="flex-1 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 cursor-pointer"
+                            >
+                              Confirm Unlock (-{hintState.penalty_tier_1 || 15} pts)
+                            </button>
+                            <button
+                              onClick={() => setShowHintConfirm(null)}
+                              className="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowHintConfirm(1)}
+                          className="w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center gap-1.5 border border-amber-200 cursor-pointer transition-colors"
+                        >
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Unlock Intel Nudge (-{hintState.penalty_tier_1 || 15} pts)</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Hint 2: Tactical Exploit */}
+                  <div className="rounded-2xl border border-slate-200 overflow-hidden">
+                    <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                        <span className="w-4 h-4 rounded-full bg-purple-100 text-purple-700 inline-flex items-center justify-center text-[9px] font-extrabold">2</span>
+                        Tier 2: Tactical Exploit
+                      </span>
+                      <span className="text-[10px] font-bold text-rose-600">
+                        -{hintState.penalty_tier_2 || 30} pts total
+                      </span>
+                    </div>
+                    <div className="p-3">
+                      {hintState.hint_text_2 ? (
+                        <div className="p-2.5 rounded-xl bg-purple-50/80 border border-purple-200 text-xs text-purple-950 leading-relaxed font-mono">
+                          {hintState.hint_text_2}
+                        </div>
+                      ) : showHintConfirm === 2 ? (
+                        <div className="space-y-2">
+                          <p className="text-xs text-purple-900 font-medium">
+                            Unlock Tier 2 Exploit for a total penalty of <strong className="text-rose-600 font-bold">-{hintState.penalty_tier_2 || 30} pts</strong>?
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleRevealHint(2)}
+                              className="flex-1 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 cursor-pointer"
+                            >
+                              Confirm Unlock (-{hintState.penalty_tier_2 || 30} pts)
+                            </button>
+                            <button
+                              onClick={() => setShowHintConfirm(null)}
+                              className="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowHintConfirm(2)}
+                          className="w-full py-1.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-xs flex items-center justify-center gap-1.5 border border-purple-200 cursor-pointer transition-colors"
+                        >
+                          <Lightbulb className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Unlock Tactical Exploit (-{hintState.penalty_tier_2 || 30} pts)</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

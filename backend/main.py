@@ -23,7 +23,7 @@ from backend.schemas import (
     UserLogin, TokenResponse, UserResponse, ParticipantCreate, ParticipantUpdate, ParticipantResponse,
     LevelInfo, PromptSubmit, SubmissionResponse, SubmissionDetail, ParticipantStatsResponse, LevelProgressDetail,
     LeaderboardResponse, LeaderboardEntry, TimerResponse, CompetitionStateUpdate, AdminSubmissionLog, SystemHealthResponse,
-    HintStatusResponse, HintRevealResponse, PasswordVerify, AdminLevelInfo, LevelSecretUpdate
+    HintStatusResponse, HintRevealResponse, HintRevealRequest, PasswordVerify, AdminLevelInfo, LevelSecretUpdate
 )
 from backend.auth import (
     hash_password, verify_password, create_access_token, get_current_user,
@@ -303,12 +303,18 @@ def check_competition_timer(db: Session) -> CompetitionState:
 
     return state
 
-# Helper: level ids this participant has revealed a hint for
-def revealed_hint_levels(db: Session, participant_id) -> set:
-    rows = db.query(ParticipantHint.level_id).filter(
+# Helper: level ids and max tier this participant has revealed a hint for
+def revealed_hint_levels(db: Session, participant_id) -> dict:
+    rows = db.query(ParticipantHint.level_id, ParticipantHint.hint_tier).filter(
         ParticipantHint.participant_id == participant_id
     ).all()
-    return {row[0] for row in rows}
+    res = {}
+    for r in rows:
+        lvl = r[0]
+        tier = r[1] or 1
+        if lvl not in res or tier > res[lvl]:
+            res[lvl] = tier
+    return res
 
 # Helper: has this participant revealed the hint for a single level?
 def _hint_revealed_for(db: Session, participant_id, level_id: int) -> bool:
@@ -332,7 +338,7 @@ def _level_to_info(lvl: Level, hint_revealed: bool) -> dict:
         "enabled": lvl.enabled,
         "hint_released": lvl.hint_released,
         "hint_revealed": hint_revealed,
-        "hint_penalty": get_hint_penalty(lvl.level_id),
+        "hint_penalty": get_hint_penalty(lvl.level_id, 1),
     }
 
 
@@ -544,8 +550,8 @@ async def run_submission(
     already_solved = level.level_id in completed_list
     score_awarded = 0
     if success and level_ctx.round_id == 3 and not already_solved:
-        hint_used = level_ctx.level_id in revealed_hint_levels(db, current_participant.id)
-        score_awarded = calculate_score(level_ctx.level_id, current_attempt, hint_used)
+        hint_tier = revealed_hint_levels(db, current_participant.id).get(level_ctx.level_id, 0)
+        score_awarded = calculate_score(level_ctx.level_id, current_attempt, hint_tier=hint_tier)
         already_solved = True
 
     # Async Write-Behind: Return response immediately without waiting for database!
@@ -702,7 +708,7 @@ def get_submission_history(
         score_awarded = 0
         if success and lvl:
             score_awarded = calculate_score(
-                log.level, attempt_number, log.level in hints_revealed
+                log.level, attempt_number, hints_revealed.get(log.level, 0)
             )
 
         details.append(SubmissionDetail(
@@ -733,17 +739,31 @@ def get_level_hint(
     if not level:
         raise HTTPException(status_code=404, detail="Level not found")
 
-    revealed = _hint_revealed_for(db, current_participant.id, level.level_id)
+    hints = db.query(ParticipantHint).filter(
+        ParticipantHint.participant_id == current_participant.id,
+        ParticipantHint.level_id == level.level_id
+    ).all()
+    unlocked_tiers = {h.hint_tier for h in hints}
+    max_tier = max(unlocked_tiers) if unlocked_tiers else 0
+    revealed = max_tier > 0
+
+    p1 = get_hint_penalty(level.level_id, 1)
+    p2 = get_hint_penalty(level.level_id, 2)
 
     return {
         "released": level.hint_released,
         "revealed": revealed,
-        "hint_text": level.hint_text if (level.hint_released and revealed) else None,
-        "penalty": get_hint_penalty(level.level_id),
+        "hint_tier": max_tier,
+        "hint_text": level.hint_text if (level.hint_released and 1 in unlocked_tiers) else None,
+        "hint_text_2": level.hint_text_2 if (level.hint_released and 2 in unlocked_tiers) else None,
+        "penalty_tier_1": p1,
+        "penalty_tier_2": p2,
+        "penalty": get_hint_penalty(level.level_id, max_tier) if max_tier > 0 else p1,
     }
 
 @app.post("/api/arena/level/hint/reveal", response_model=HintRevealResponse)
 def reveal_level_hint(
+    payload: Optional[HintRevealRequest] = None,
     current_participant: Team = Depends(get_current_participant),
     db: Session = Depends(get_db)
 ):
@@ -758,20 +778,37 @@ def reveal_level_hint(
     if not level.hint_released:
         raise HTTPException(status_code=400, detail="No hint has been released by organizers for this level yet.")
 
-    # Check if already revealed — only insert once
-    if not _hint_revealed_for(db, current_participant.id, level.level_id):
+    existing_hints = db.query(ParticipantHint).filter(
+        ParticipantHint.participant_id == current_participant.id,
+        ParticipantHint.level_id == level.level_id
+    ).all()
+    existing_tiers = {h.hint_tier for h in existing_hints}
+
+    # If payload specified a tier (1 or 2), use it. Otherwise, advance to next tier: 1 then 2.
+    if payload and payload.tier in (1, 2):
+        target_tier = payload.tier
+    else:
+        target_tier = 2 if 1 in existing_tiers else 1
+
+    if target_tier not in existing_tiers:
         db.add(ParticipantHint(
             participant_id=current_participant.id,
-            level_id=level.level_id
+            level_id=level.level_id,
+            hint_tier=target_tier
         ))
         db.commit()
 
-    penalty = get_hint_penalty(level.level_id)
+    penalty = get_hint_penalty(level.level_id, target_tier)
+    chosen_text = level.hint_text_2 if target_tier == 2 else level.hint_text
+    if not chosen_text:
+        chosen_text = level.hint_text or "No hint description defined."
+
     return {
         "success": True,
-        "hint_text": level.hint_text if level.hint_text else "No hint description defined.",
+        "hint_tier": target_tier,
+        "hint_text": chosen_text,
         "penalty_applied": penalty,
-        "message": f"Hint revealed. {penalty} points will be deducted from your score for this level upon solving."
+        "message": f"Hint Tier {target_tier} revealed. {penalty} points penalty will be deducted from your score upon solving."
     }
 
 @app.get("/api/arena/stats", response_model=ParticipantStatsResponse)
@@ -798,7 +835,7 @@ def get_participant_stats(
         if solved:
             # Calculate score earned based on the attempts used before/when solved
             score_earned = calculate_score(
-                lvl.level_id, attempts_count, lvl.level_id in hints_revealed
+                lvl.level_id, attempts_count, hints_revealed.get(lvl.level_id, 0)
             )
 
         level_details.append(LevelProgressDetail(
@@ -952,6 +989,7 @@ def admin_list_levels(
             "hint_released": l.hint_released,
             "hint_revealed": False,
             "hint_text": l.hint_text,
+            "hint_text_2": l.hint_text_2,
             "secret": l.secret,
             "system_prompt": l.system_prompt,
             "target_phrase": l.target_phrase
@@ -994,6 +1032,9 @@ def admin_update_level_secret(
     if data.hint_text is not None:
         lvl.hint_text = data.hint_text
         changed_fields.append("hint_text")
+    if data.hint_text_2 is not None:
+        lvl.hint_text_2 = data.hint_text_2
+        changed_fields.append("hint_text_2")
 
     if not changed_fields:
         raise HTTPException(status_code=400, detail="No fields provided to update.")
@@ -1601,10 +1642,10 @@ def verify_level_password(
 
     score_awarded = 0
     if not already_solved:
-        hint_used = level_id in revealed_hint_levels(db, current_participant.id)
+        hint_tier = revealed_hint_levels(db, current_participant.id).get(level_id, 0)
         # Use attempts_used+1 because this password verification is the resolution
         # attempt for this level; attempts_used reflects attempts before this call.
-        score_awarded = calculate_score(level_id, max(1, attempts_used + 1), hint_used)
+        score_awarded = calculate_score(level_id, max(1, attempts_used + 1), hint_tier=hint_tier)
         award_level_completion(db, current_participant, level_id, score_awarded, round_id=level.round_id)
 
     return {

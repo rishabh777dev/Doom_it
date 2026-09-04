@@ -134,10 +134,11 @@ export const apiGetLevelHint = async () => {
   return handleResponse(res);
 };
 
-export const apiRevealLevelHint = async () => {
+export const apiRevealLevelHint = async (tier = null) => {
   const res = await fetch(`${BASE_URL}/api/arena/level/hint/reveal`, {
     method: 'POST',
     headers: getHeaders(),
+    body: tier ? JSON.stringify({ tier }) : undefined,
   });
   return handleResponse(res);
 };

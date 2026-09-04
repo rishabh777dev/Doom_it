@@ -68,6 +68,7 @@ class LevelInfo(BaseModel):
 
 class AdminLevelInfo(LevelInfo):
     hint_text: Optional[str] = None
+    hint_text_2: Optional[str] = None
     secret: Optional[str] = None
     system_prompt: Optional[str] = None
     target_phrase: Optional[str] = None
@@ -76,14 +77,22 @@ class AdminLevelInfo(LevelInfo):
 class HintStatusResponse(BaseModel):
     released: bool
     revealed: bool
+    hint_tier: Optional[int] = 0
     hint_text: Optional[str] = None
-    penalty: Optional[int] = 25
+    hint_text_2: Optional[str] = None
+    penalty_tier_1: Optional[int] = 15
+    penalty_tier_2: Optional[int] = 30
+    penalty: Optional[int] = 15
+
+class HintRevealRequest(BaseModel):
+    tier: Optional[int] = None
 
 class HintRevealResponse(BaseModel):
     success: bool
+    hint_tier: Optional[int] = 1
     hint_text: str
     message: str
-    penalty_applied: Optional[int] = 25
+    penalty_applied: Optional[int] = 15
 
 # Submission Schemas
 class PromptSubmit(BaseModel):
@@ -209,3 +218,4 @@ class LevelSecretUpdate(BaseModel):
     target_phrase: Optional[str] = Field(None, max_length=500)
     system_prompt: Optional[str] = Field(None, max_length=12000)
     hint_text: Optional[str] = Field(None, max_length=2000)
+    hint_text_2: Optional[str] = Field(None, max_length=2000)

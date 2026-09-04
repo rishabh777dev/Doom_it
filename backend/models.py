@@ -116,6 +116,7 @@ class Level(Base):
     validation_type = Column(String(50), nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)
     hint_text = Column(Text, nullable=True)
+    hint_text_2 = Column(Text, nullable=True)
     hint_released = Column(Boolean, default=False, nullable=False)
 
     # Relationships
@@ -163,6 +164,7 @@ class ParticipantHint(Base):
     id = Column(Integer, primary_key=True, index=True)
     participant_id = Column(GUID(), ForeignKey("teams.id", ondelete="CASCADE"), nullable=False)
     level_id = Column(Integer, ForeignKey("levels.level_id", ondelete="CASCADE"), nullable=False)
+    hint_tier = Column(Integer, default=1, nullable=False)
     revealed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 class AuditLog(Base):
