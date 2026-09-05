@@ -2358,16 +2358,18 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                       {(warRoomMatrix?.teams || participants.map((p) => {
                         const solvedList = p.completed_levels || [];
                         const attemptsDict = p.attempts || {};
-                        const levelsMap = {};
+                        const levelsList = [];
                         for (let l = 1; l <= 12; l++) {
                           const solved = solvedList.includes(l);
                           const att = attemptsDict[String(l)] || 0;
-                          levelsMap[String(l)] = {
+                          levelsList.push({
+                            level_id: l,
+                            round_id: l <= 5 ? 1 : l <= 9 ? 2 : 3,
                             status: solved ? 'SOLVED' : att > 0 ? 'ATTEMPTING' : 'UNATTEMPTED',
                             attempts: att,
                             solved: solved,
                             first_blood: false
-                          };
+                          });
                         }
                         return {
                           team_id: p.id,
@@ -2375,7 +2377,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                           total_score: p.total_score,
                           levels_solved: solvedList.length,
                           is_disqualified: p.is_disqualified,
-                          levels: levelsMap
+                          levels: levelsList
                         };
                       })).map((team) => (
                         <tr key={team.team_id} className="hover:bg-slate-50 transition-colors">
@@ -2394,10 +2396,13 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                             {team.levels_solved}/12
                           </td>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => {
-                            const cell = team.levels?.[String(lvl)] || { status: 'UNATTEMPTED', attempts: 0 };
-                            const isFirstBlood = cell.status === 'FIRST_BLOOD' || cell.first_blood;
-                            const isSolved = cell.status === 'SOLVED' || cell.solved;
-                            const isAttempting = cell.status === 'ATTEMPTING' || cell.attempts > 0;
+                            const cell = Array.isArray(team.levels)
+                              ? (team.levels.find((l) => l.level_id === lvl) || { status: 'UNATTEMPTED', attempts: 0 })
+                              : (team.levels?.[String(lvl)] || { status: 'UNATTEMPTED', attempts: 0 });
+                            const status = (cell.status || '').toUpperCase();
+                            const isFirstBlood = Boolean(cell.first_blood || status === 'FIRST_BLOOD');
+                            const isSolved = Boolean(isFirstBlood || cell.solved || status === 'SOLVED');
+                            const isAttempting = Boolean(status === 'ATTEMPTING' || (!isSolved && (cell.attempts || 0) > 0));
 
                             return (
                               <td key={lvl} className="py-1 px-1">

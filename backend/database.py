@@ -109,6 +109,9 @@ def apply_lightweight_migrations() -> None:
             "cooldown_until": "TIMESTAMP",
             "warning_message": "TEXT",
         },
+        "progress": {
+            "level_scores": "TEXT",
+        },
     }
 
     try:

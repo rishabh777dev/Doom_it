@@ -302,10 +302,11 @@ class RoundQualificationStatusResponse(BaseModel):
 class WarRoomLevelStatus(BaseModel):
     level_id: int
     round_id: int
-    status: str  # 'unattempted', 'attempting', 'solved'
+    status: str  # 'unattempted', 'attempting', 'solved', 'first_blood'
     attempts: int = 0
     score_earned: int = 0
     first_blood: bool = False
+    solved: bool = False
     solved_at: Optional[datetime] = None
 
 class WarRoomTeamRow(BaseModel):

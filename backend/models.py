@@ -72,6 +72,7 @@ class Progress(Base):
     unlocked_levels = Column(JSON, default=lambda: [1], nullable=False)  # JSONB array of unlocked level IDs
     completed_levels = Column(JSON, default=list, nullable=False)  # JSONB array of completed level IDs
     attempts = Column(JSON, default=dict, nullable=False)  # JSONB dict tracking attempts per level, e.g. {"1": 0, "2": 0}
+    level_scores = Column(JSON, default=dict, nullable=True)  # JSONB dict tracking awarded points per level, e.g. {"1": 70}
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships

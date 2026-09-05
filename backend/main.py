@@ -244,6 +244,18 @@ def get_cached_timer(db: Session) -> dict:
     _TIMER_CACHE["last_fetched"] = now_mono
     return payload
 
+def _parse_json_field(val):
+    if val is None:
+        return {}
+    if isinstance(val, dict):
+        return val
+    if isinstance(val, str):
+        try:
+            return json.loads(val)
+        except Exception:
+            return {}
+    return {}
+
 def _async_record_prompt_submission(
     team_id,
     level_id: int,
@@ -274,7 +286,7 @@ def _async_record_prompt_submission(
             p = db.query(Progress).filter(Progress.team_id == team_id).first()
             if p:
                 p.attempts = new_attempts
-                if success and level_round_id == 3 and not already_solved:
+                if success and not already_solved:
                     p_team = db.query(Team).filter(Team.id == team_id).first()
                     if p_team:
                         award_level_completion(db, p_team, level_id, score_awarded, round_id=level_round_id)
@@ -656,7 +668,7 @@ async def run_submission(
     score_awarded = 0
     score_breakdown = None
 
-    if success and level_ctx.round_id == 3 and not already_solved:
+    if success and not already_solved:
         hint_tier = revealed_hint_levels(db, current_participant.id).get(level_ctx.level_id, 0)
         score_breakdown = get_score_breakdown(level_ctx.level_id, current_attempt, hint_tier)
         score_awarded = score_breakdown["final_score"]
@@ -715,7 +727,12 @@ async def run_submission(
 def award_level_completion(db: Session, participant: Team, level_id: int, score_awarded: int, round_id: int = 1) -> None:
     """Credit a solved level, roll the score summary and unlock the next node."""
     progress = participant.progress
-    progress.total_score += score_awarded
+
+    # Update level_scores dictionary
+    level_scores = dict(_parse_json_field(progress.level_scores))
+    level_scores[str(level_id)] = score_awarded
+    progress.level_scores = level_scores
+    progress.total_score = sum(level_scores.values())
 
     completed_list = list(progress.completed_levels or [])
     if level_id not in completed_list:
@@ -726,10 +743,8 @@ def award_level_completion(db: Session, participant: Team, level_id: int, score_
     if not score_entry:
         score_entry = Score(team_id=participant.id, round1_score=0, total_score=0)
         db.add(score_entry)
-    # Credit the per-round column using the actual round from the level definition.
-    if round_id == 1:
-        score_entry.round1_score += score_awarded
-    score_entry.total_score += score_awarded
+    score_entry.total_score = progress.total_score
+    score_entry.round1_score = sum(v for k, v in level_scores.items() if int(k) <= 5)
 
     # Check competition state for cross-round progression limits
     state = db.query(CompetitionState).first()
@@ -904,6 +919,13 @@ def reveal_level_hint(
     ).all()
     existing_tiers = {h.hint_tier for h in existing_hints}
 
+    # Progressive Hint Enforcement: Tier 2 can only be unlocked after Tier 1 is revealed
+    if payload and payload.tier == 2 and 1 not in existing_tiers:
+        raise HTTPException(
+            status_code=400,
+            detail="Progressive hint rule: You must reveal Tier 1 (Intel Nudge) before unlocking Tier 2."
+        )
+
     # If payload specified a tier (1 or 2), use it. Otherwise, advance to next tier: 1 then 2.
     if payload and payload.tier in (1, 2):
         target_tier = payload.tier
@@ -946,6 +968,9 @@ def get_participant_stats(
     # One query for every revealed hint rather than one per level.
     hints_revealed = revealed_hint_levels(db, current_participant.id)
 
+    saved_scores = dict(_parse_json_field(current_participant.progress.level_scores))
+    updated_scores = False
+
     for lvl in levels:
         attempts_count = attempts_dict.get(str(lvl.level_id), 0)
         total_attempts += attempts_count
@@ -955,12 +980,20 @@ def get_participant_stats(
         score_breakdown = None
         if solved:
             h_tier = hints_revealed.get(lvl.level_id, 0)
-            score_earned = calculate_score(
-                lvl.level_id, attempts_count, h_tier
-            )
+            if str(lvl.level_id) in saved_scores:
+                score_earned = int(saved_scores[str(lvl.level_id)])
+            else:
+                score_earned = calculate_score(
+                    lvl.level_id, attempts_count, h_tier
+                )
+                saved_scores[str(lvl.level_id)] = score_earned
+                updated_scores = True
+
             score_breakdown = get_score_breakdown(
                 lvl.level_id, attempts_count, h_tier
             )
+            if score_breakdown:
+                score_breakdown["final_score"] = score_earned
 
         level_details.append(LevelProgressDetail(
             level_id=lvl.level_id,
@@ -971,6 +1004,16 @@ def get_participant_stats(
             score_earned=score_earned,
             score_breakdown=score_breakdown
         ))
+
+    calculated_total = sum(d.score_earned for d in level_details if d.solved)
+    if updated_scores or current_participant.progress.total_score != calculated_total:
+        current_participant.progress.level_scores = saved_scores
+        current_participant.progress.total_score = calculated_total
+        score_entry = db.query(Score).filter(Score.team_id == current_participant.id).first()
+        if score_entry:
+            score_entry.total_score = calculated_total
+            score_entry.round1_score = sum(v for k, v in saved_scores.items() if int(k) <= 5)
+        db.commit()
 
     recent_submissions = get_submission_history(
         limit=10, current_participant=current_participant, db=db
@@ -1308,6 +1351,7 @@ def admin_reset_participant_progress(
     team.progress.unlocked_levels = [1]
     team.progress.completed_levels = []
     team.progress.attempts = {}
+    team.progress.level_scores = {}
     
     # Update score summary
     score_sum = db.query(Score).filter(Score.team_id == team.id).first()
@@ -1916,6 +1960,21 @@ def admin_get_war_room_matrix(
     for log in successful_logs:
         if log.level not in first_blood_map:
             first_blood_map[log.level] = log.team_id
+
+    # Fallback for levels solved directly if not present in prompt logs
+    for l in levels:
+        if l.level_id not in first_blood_map:
+            candidate = None
+            candidate_time = None
+            for t in teams:
+                if l.level_id in (t.progress.completed_levels or []):
+                    t_time = t.progress.updated_at or datetime.max
+                    if candidate_time is None or t_time < candidate_time:
+                        candidate = t.id
+                        candidate_time = t_time
+            if candidate:
+                first_blood_map[l.level_id] = candidate
+
     first_blood_owners = {}
     team_cache = {t.id: t.team_name for t in teams}
     for lvl_id, t_id in first_blood_map.items():
@@ -1936,13 +1995,13 @@ def admin_get_war_room_matrix(
             lid = l.level_id
             attempts = att_dict.get(str(lid), 0)
             is_solved = lid in compl
-            is_fb = (first_blood_map.get(lid) == t.id)
+            is_fb = bool(is_solved and first_blood_map.get(lid) == t.id)
 
             level_attempts_counter[lid] += attempts
             if is_solved:
                 total_breaches += 1
                 level_solves_counter[lid] += 1
-                status_str = "solved"
+                status_str = "first_blood" if is_fb else "solved"
             elif attempts > 0:
                 status_str = "attempting"
             else:
@@ -1954,7 +2013,8 @@ def admin_get_war_room_matrix(
                 status=status_str,
                 attempts=attempts,
                 score_earned=l.base_score if is_solved else 0,
-                first_blood=is_fb
+                first_blood=is_fb,
+                solved=is_solved
             ))
 
         team_rows.append(WarRoomTeamRow(
@@ -2218,12 +2278,28 @@ def verify_level_password(
 
     score_awarded = 0
     hint_tier = revealed_hint_levels(db, current_participant.id).get(level_id, 0)
-    effective_attempts = max(1, attempts_used + 1)
+    effective_attempts = max(1, attempts_used)
     score_breakdown = get_score_breakdown(level_id, effective_attempts, hint_tier)
 
     if not already_solved:
         score_awarded = score_breakdown["final_score"]
         award_level_completion(db, current_participant, level_id, score_awarded, round_id=level.round_id)
+        # Record successful PromptLog entry for first blood & audit tracking
+        try:
+            log = PromptLog(
+                team_id=current_participant.id,
+                level=level_id,
+                prompt="[PASSWORD / FLAG VERIFIED]",
+                response="Correct password. Level completed. Next level unlocked.",
+                provider="system",
+                attempt_number=effective_attempts,
+                success=True,
+                latency_ms=0
+            )
+            db.add(log)
+            db.commit()
+        except Exception as e:
+            logger.warning("Failed to record verification prompt log: %s", e)
 
     return {
         "success": True,

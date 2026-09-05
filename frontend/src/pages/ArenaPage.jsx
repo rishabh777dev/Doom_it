@@ -22,6 +22,7 @@ import {
   Flame,
   Archive,
   ArrowRight,
+  Lock,
   Terminal as TermIcon
 } from 'lucide-react';
 import {
@@ -841,20 +842,27 @@ export default function ArenaPage({ user }) {
                   </div>
 
                   {/* Hint 2: Tactical Exploit */}
-                  <div className="rounded-2xl border border-slate-200 overflow-hidden">
+                  <div className={`rounded-2xl border transition-all overflow-hidden ${hintState.hint_text ? 'border-slate-200' : 'border-slate-200/70 bg-slate-50/50'}`}>
                     <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
                       <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                        <span className="w-4 h-4 rounded-full bg-purple-100 text-purple-700 inline-flex items-center justify-center text-[9px] font-extrabold">2</span>
+                        <span className={`w-4 h-4 rounded-full inline-flex items-center justify-center text-[9px] font-extrabold ${hintState.hint_text ? 'bg-purple-100 text-purple-700' : 'bg-slate-200 text-slate-500'}`}>2</span>
                         Tier 2: Tactical Exploit
                       </span>
-                      <span className="text-[10px] font-bold text-rose-600">
-                        -{hintState.penalty_tier_2 || 30} pts total
+                      <span className={`text-[10px] font-bold ${hintState.hint_text ? 'text-rose-600' : 'text-slate-400'}`}>
+                        {hintState.hint_text ? `-${hintState.penalty_tier_2 || 30} pts total` : 'Requires Tier 1'}
                       </span>
                     </div>
                     <div className="p-3">
                       {hintState.hint_text_2 ? (
                         <div className="p-2.5 rounded-xl bg-purple-50/80 border border-purple-200 text-xs text-purple-950 leading-relaxed font-mono">
                           {hintState.hint_text_2}
+                        </div>
+                      ) : !hintState.hint_text ? (
+                        <div className="p-3 bg-slate-100/70 border border-slate-200 rounded-xl text-xs text-slate-500 flex items-center gap-2.5">
+                          <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span>
+                            <strong className="text-slate-700 font-semibold">Locked</strong> • Unlock Tier 1 (Intel Nudge) first to access this tactical exploit.
+                          </span>
                         </div>
                       ) : showHintConfirm === 2 ? (
                         <div className="space-y-2">
