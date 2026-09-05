@@ -125,48 +125,73 @@ export default function LandingPage({ user, timerState }) {
 
           <div className="space-y-4">
             
+            {/* 1. What is the game */}
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
               <h4 className="font-display font-bold text-sm text-slate-900">
-                How does level clearance and payload validation work?
+                What is this competition and how do we play?
               </h4>
-              <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                When your prompt compels the guardian model to disclose the protected secret token or phrase anywhere in its response, the automated judge immediately flags the level as cleared, awards your score, and unlocks the next challenge.
+              <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                In this competition, your team chats with AI guardians to uncover secret passwords and hidden flags. Each level features a different AI character guarding a secret. Your mission is to use creative prompts, clever questions, and social engineering to convince the AI to reveal its password. Submit the extracted flag to clear the level and earn points!
               </p>
             </div>
 
+            {/* 2. Rounds & Elimination Structure */}
+            <div className="p-5 rounded-2xl bg-blue-50/60 border-2 border-brand-blue/30 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-brand-blue text-white">
+                  Tournament Format
+                </span>
+              </div>
+              <h4 className="font-display font-bold text-sm text-slate-900 mt-1.5">
+                How do the rounds and team eliminations work?
+              </h4>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                The competition features 3 progressive rounds with 5 teams eliminated after each round:
+              </p>
+              <div className="mt-3 space-y-2 text-xs text-slate-700">
+                <div className="p-2.5 rounded-xl bg-white/80 border border-blue-100 flex items-start gap-2.5">
+                  <span className="font-bold text-brand-blue font-mono shrink-0">Round 1</span>
+                  <span><strong>15 Teams</strong> start. At the end of the round, 5 teams are eliminated. Only the <strong>Top 10 teams</strong> qualify for Round 2.</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/80 border border-blue-100 flex items-start gap-2.5">
+                  <span className="font-bold text-brand-blue font-mono shrink-0">Round 2</span>
+                  <span>The <strong>10 qualified teams</strong> tackle harder multi-phrase sentinels. Another 5 teams are eliminated, advancing only the <strong>Top 5 teams</strong>.</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/80 border border-blue-100 flex items-start gap-2.5">
+                  <span className="font-bold text-brand-blue font-mono shrink-0">Round 3</span>
+                  <span>The <strong>Top 5 finalists</strong> battle the ultimate fortress bosses in the grand showdown for the championship podium!</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Scoring & Penalties */}
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
               <h4 className="font-display font-bold text-sm text-slate-900">
-                How does the attempt penalty system work?
+                How does scoring and attempt penalties work?
               </h4>
-              <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Your first prompt submission on any level incurs zero penalty. Subsequent attempts apply a deduction based on the round's difficulty tier (Round 1: -2 pts, Round 2: -3 pts, Round 3: -4 pts per attempt). Precise, well-crafted payloads will always rank higher than rapid brute forcing.
+              <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                Every level offers a base score (e.g. 100 points). Your very first prompt on any level is completely free! If you need extra prompts to crack the secret, a small deduction is applied for each additional try (-2 to -4 pts depending on the round). The faster and more precisely you crack the bot, the higher your score.
               </p>
             </div>
 
+            {/* 4. Tactical Hints */}
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
               <h4 className="font-display font-bold text-sm text-slate-900">
-                How do Tactical Hints affect our team's score?
+                Can we get hints if our team gets stuck?
               </h4>
-              <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Each level features a 2-tier intelligence dossier. Tier 1 reveals defensive orientation, while Tier 2 exposes narrow vulnerability windows. Unlocking a hint applies a fixed deduction (Round 1: -15/-30, Round 2: -25/-40, Round 3: -35/-50), so strategize carefully before unlocking.
+              <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                Yes! Every level provides up to 2 tactical hints. Hints reveal helpful clues about the AI's personality and weaknesses, but taking a hint deducts points from that level's final score. Discuss with your team whether unlocking a hint is worth the small point trade-off!
               </p>
             </div>
 
+            {/* 5. Teamwork */}
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
               <h4 className="font-display font-bold text-sm text-slate-900">
-                Can multiple team members submit prompts at the same time?
+                Can multiple teammates submit prompts at the same time?
               </h4>
-              <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Teams operate under a shared team account. To prevent race conditions, duplicate attempt penalties, and session collisions, coordinate payloads with your teammates and transmit from one active terminal.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
-              <h4 className="font-display font-bold text-sm text-slate-900">
-                What happens when a round timer expires?
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Each round is strictly time-bounded. When the timer hits zero, unsolved levels in that round freeze, and all teams advance to the subsequent round. All points earned remain safely locked in your scoreboard standing.
+              <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                Each team shares one login account. Because every prompt counts towards your attempt limit and penalties, we strongly recommend that teammates brainstorm payloads together and designate one member to send prompts from a single screen.
               </p>
             </div>
 

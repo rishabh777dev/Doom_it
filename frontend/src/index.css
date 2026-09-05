@@ -97,6 +97,51 @@
   animation: badge-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+/* Olympic Prize Ceremony Keyframes */
+@keyframes olympic-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  70% {
+    transform: translateY(-5px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-olympic-rise {
+  animation: olympic-rise 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes medal-sway {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(2.5deg);
+  }
+}
+
+.animate-medal-sway {
+  animation: medal-sway 3.2s ease-in-out infinite;
+}
+
+@keyframes champion-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px 1px rgba(245, 158, 11, 0.25), 0 10px 25px -5px rgba(245, 158, 11, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 30px 6px rgba(245, 158, 11, 0.45), 0 15px 35px -5px rgba(245, 158, 11, 0.25);
+  }
+}
+
+.animate-champion-glow {
+  animation: champion-glow 2.6s ease-in-out infinite;
+}
+
 /* Accessibility: Respect prefers-reduced-motion across the entire site */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
