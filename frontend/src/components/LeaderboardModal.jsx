@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trophy, RefreshCw, Medal } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { X, Trophy, RefreshCw, Medal, ExternalLink } from 'lucide-react';
 import { apiGetLeaderboard } from '../services/api';
 
 export default function LeaderboardModal({ isOpen, onClose, currentUsername }) {
@@ -51,17 +52,26 @@ export default function LeaderboardModal({ isOpen, onClose, currentUsername }) {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              to="/leaderboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors flex items-center justify-center cursor-pointer"
+              title="Open full scoreboard in new tab"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Link>
             <button
               onClick={loadLeaderboard}
               disabled={loading}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
               title="Refresh Leaderboard"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={onClose}
-              className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+              className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
