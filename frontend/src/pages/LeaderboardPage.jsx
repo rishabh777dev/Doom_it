@@ -1,39 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, RefreshCw, Search, Medal, Shield, Sparkles, TrendingUp } from 'lucide-react';
+import { Trophy, RefreshCw, Search, Medal, Shield, Sparkles } from 'lucide-react';
 import { apiGetLeaderboard } from '../services/api';
-import { useScoreboardRankAnimation, useCountUp } from '../utils/animations';
 
-function PodiumScore({ score, isClimbing }) {
-  const animatedScore = useCountUp(score, 700);
+function PodiumScore({ score }) {
   return (
-    <span className={`font-mono font-extrabold text-2xl text-emerald-600 transition-transform duration-300 ${isClimbing ? 'scale-110 text-emerald-500' : ''}`}>
-      {animatedScore} <span className="text-xs text-slate-400 font-normal">pts</span>
+    <span className="font-mono font-extrabold text-2xl text-emerald-600">
+      {score} <span className="text-xs text-slate-400 font-normal">pts</span>
     </span>
   );
 }
 
-function ScoreCell({ score, scoreDelta, isClimbing }) {
-  const animatedScore = useCountUp(score, 700);
+function ScoreCell({ score }) {
   return (
     <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-600 text-base">
-      <div className="flex items-center justify-end gap-1.5">
-        {scoreDelta > 0 && (
-          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
-            +{scoreDelta}
-          </span>
-        )}
-        <span className={isClimbing ? 'inline-block scale-110 text-emerald-500 transition-transform duration-300' : ''}>
-          {animatedScore} <span className="text-xs text-slate-400 font-normal">pts</span>
-        </span>
-      </div>
+      {score} <span className="text-xs text-slate-400 font-normal">pts</span>
     </td>
   );
 }
 
-function PodiumStep({ team, rank, anim, orderClass, animationDelay }) {
+function PodiumStep({ team, rank, orderClass }) {
   if (!team) return null;
-
-  const isClimbing = Boolean(anim?.isClimbing || anim?.hasScored);
 
   const configs = {
     1: {
@@ -46,7 +32,7 @@ function PodiumStep({ team, rank, anim, orderClass, animationDelay }) {
       pedestalHeight: 'h-24 sm:h-28',
       numeral: '1',
       medalGlow: 'shadow-amber-400/40',
-      medalIcon: <Medal className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500 animate-medal-sway" />,
+      medalIcon: <Medal className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500" />,
       cardGlow: 'ring-2 ring-amber-300/70 shadow-lg shadow-amber-400/20',
       accentColor: 'text-amber-600',
     },
@@ -60,7 +46,7 @@ function PodiumStep({ team, rank, anim, orderClass, animationDelay }) {
       pedestalHeight: 'h-16 sm:h-20',
       numeral: '2',
       medalGlow: 'shadow-slate-300/40',
-      medalIcon: <Medal className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 animate-medal-sway" style={{ animationDelay: '0.8s' }} />,
+      medalIcon: <Medal className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />,
       cardGlow: 'hover:border-slate-400 shadow-sm',
       accentColor: 'text-slate-600',
     },
@@ -74,7 +60,7 @@ function PodiumStep({ team, rank, anim, orderClass, animationDelay }) {
       pedestalHeight: 'h-12 sm:h-14',
       numeral: '3',
       medalGlow: 'shadow-amber-700/40',
-      medalIcon: <Medal className="w-5 h-5 sm:w-6 sm:h-6 text-amber-700 animate-medal-sway" style={{ animationDelay: '1.6s' }} />,
+      medalIcon: <Medal className="w-5 h-5 sm:w-6 sm:h-6 text-amber-700" />,
       cardGlow: 'hover:border-amber-700/50 shadow-sm',
       accentColor: 'text-amber-800',
     },
@@ -83,15 +69,10 @@ function PodiumStep({ team, rank, anim, orderClass, animationDelay }) {
   const config = configs[rank];
 
   return (
-    <div
-      className={`flex flex-col justify-end w-full animate-podium-rise ${orderClass}`}
-      style={{ animationDelay }}
-    >
+    <div className={`flex flex-col justify-end w-full ${orderClass}`}>
       {/* Top Suspended Card */}
       <div
-        className={`relative p-5 sm:p-6 rounded-3xl ${config.cardBorder} ${config.cardBg} shadow-card flex flex-col justify-between space-y-3.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${config.cardGlow} ${
-          isClimbing ? 'ring-2 ring-emerald-400 shadow-emerald-400/20 scale-[1.02]' : ''
-        }`}
+        className={`relative p-5 sm:p-6 rounded-3xl ${config.cardBorder} ${config.cardBg} shadow-card flex flex-col justify-between space-y-3.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${config.cardGlow}`}
       >
         {/* Ceremonial Ribbons / Medallion Header */}
         <div className="flex items-center justify-between">
@@ -109,15 +90,8 @@ function PodiumStep({ team, rank, anim, orderClass, animationDelay }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            {anim?.rankDelta > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black animate-bounce shadow-sm">
-                ▲ +{anim.rankDelta}
-              </span>
-            )}
-            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${config.badgeBg} flex items-center justify-center font-black text-xs sm:text-sm shadow-sm`}>
-              {rank}
-            </div>
+          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${config.badgeBg} flex items-center justify-center font-black text-xs sm:text-sm shadow-sm`}>
+            {rank}
           </div>
         </div>
 
@@ -136,7 +110,7 @@ function PodiumStep({ team, rank, anim, orderClass, animationDelay }) {
         {/* Score Display */}
         <div className="pt-2.5 border-t border-slate-200/70 flex items-baseline justify-between">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Score</span>
-          <PodiumScore score={team.total_score} isClimbing={isClimbing} />
+          <PodiumScore score={team.total_score} />
         </div>
       </div>
 
@@ -180,7 +154,6 @@ export default function LeaderboardPage({ user }) {
   );
 
   const topThree = entries.slice(0, 3);
-  const { rowRefs, animationStates } = useScoreboardRankAnimation(filteredEntries, user);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -203,7 +176,7 @@ export default function LeaderboardPage({ user }) {
           <button
             onClick={loadLeaderboard}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-slate-300 hover:bg-slate-50 font-bold text-xs text-slate-700 shadow-sm active:scale-95 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-slate-300 hover:bg-slate-50 font-bold text-xs text-slate-700 shadow-sm active:scale-95 transition-all cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
@@ -232,9 +205,7 @@ export default function LeaderboardPage({ user }) {
               <PodiumStep
                 team={topThree[1]}
                 rank={2}
-                anim={animationStates[topThree[1].team_name]}
                 orderClass="order-2 sm:order-1"
-                animationDelay="180ms"
               />
             )}
 
@@ -243,9 +214,7 @@ export default function LeaderboardPage({ user }) {
               <PodiumStep
                 team={topThree[0]}
                 rank={1}
-                anim={animationStates[topThree[0].team_name]}
                 orderClass="order-1 sm:order-2"
-                animationDelay="360ms"
               />
             )}
 
@@ -254,9 +223,7 @@ export default function LeaderboardPage({ user }) {
               <PodiumStep
                 team={topThree[2]}
                 rank={3}
-                anim={animationStates[topThree[2].team_name]}
                 orderClass="order-3 sm:order-3"
-                animationDelay="50ms"
               />
             )}
           </div>
@@ -298,33 +265,18 @@ export default function LeaderboardPage({ user }) {
               <tbody className="divide-y divide-slate-100 font-medium">
                 {filteredEntries.map((entry) => {
                   const isCurrent = user?.username && entry.team_name.toLowerCase() === user.username.toLowerCase();
-                  const anim = animationStates[entry.team_name];
-                  const isClimbing = Boolean(anim?.isClimbing || anim?.hasScored);
 
                   return (
                     <tr
                       key={entry.team_name}
-                      ref={(el) => {
-                        if (el) rowRefs.current[entry.team_name] = el;
-                        else delete rowRefs.current[entry.team_name];
-                      }}
-                      className={`transition-colors duration-300 relative ${
-                        isClimbing
-                          ? 'bg-emerald-50/90 font-bold shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400'
-                          : isCurrent
+                      className={`transition-colors duration-200 ${
+                        isCurrent
                           ? 'bg-blue-50/80 font-bold'
                           : 'hover:bg-slate-50'
                       }`}
                     >
                       <td className="py-3.5 px-3 font-mono font-bold">
-                        <div className="flex items-center gap-1.5">
-                          <span>#{entry.rank}</span>
-                          {anim?.rankDelta > 0 && (
-                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black tracking-tight animate-bounce shadow-sm">
-                              ▲ +{anim.rankDelta}
-                            </span>
-                          )}
-                        </div>
+                        <span>#{entry.rank}</span>
                       </td>
 
                       <td className="py-3.5 px-3">
@@ -334,12 +286,6 @@ export default function LeaderboardPage({ user }) {
                         {isCurrent && (
                           <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-blue-600 text-white uppercase font-bold">
                             Your Team
-                          </span>
-                        )}
-                        {isClimbing && (
-                          <span className="ml-2 inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase font-black tracking-wider animate-pulse">
-                            <Sparkles className="w-2.5 h-2.5" />
-                            Rank Surge
                           </span>
                         )}
                       </td>
@@ -354,7 +300,7 @@ export default function LeaderboardPage({ user }) {
                         </span>
                       </td>
 
-                      <ScoreCell score={entry.total_score} scoreDelta={anim?.scoreDelta} isClimbing={isClimbing} />
+                      <ScoreCell score={entry.total_score} />
                     </tr>
                   );
                 })}
