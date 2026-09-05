@@ -24,7 +24,7 @@ export default function Navbar({ user, timerState }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const isLandingPage = location.pathname === '/';
+  const isTransparentNav = (location.pathname === '/' || location.pathname === '/login') && !scrolled;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,7 +33,7 @@ export default function Navbar({ user, timerState }) {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [location.pathname]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -58,7 +58,7 @@ export default function Navbar({ user, timerState }) {
   return (
     <header
       className={`sticky top-0 z-40 w-full transition-all duration-300 ${
-        isLandingPage && !scrolled
+        isTransparentNav
           ? 'bg-transparent border-b border-transparent'
           : 'backdrop-blur-md bg-white/85 border-b border-slate-200/80 shadow-sm'
       }`}

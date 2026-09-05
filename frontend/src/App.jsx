@@ -82,6 +82,7 @@ function AppContent() {
   }, []);
 
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/admin/login';
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between selection:bg-brand-blue selection:text-white">
@@ -176,8 +177,8 @@ function AppContent() {
         </ErrorBoundary>
       </main>
 
-      {/* Footer for non-admin routes */}
-      {!isAdminRoute && (
+      {/* Footer for non-admin, non-login routes */}
+      {!isAdminRoute && !isLoginPage && (
         <footer className="py-8 bg-white border-t border-slate-200/80 mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-500">
             <div className="flex items-center gap-2">

@@ -38,7 +38,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-12 overflow-hidden">
+    <div className="relative -mt-20 min-h-screen flex items-center justify-center px-4 pt-28 pb-16 overflow-hidden">
       {/* Real-time WebGL/WebGPU Stripe & Fluted Glass Shader Background */}
       <HeroShaderBackground />
 
