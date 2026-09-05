@@ -97,6 +97,18 @@ def apply_lightweight_migrations() -> None:
 
     additions = {
         "prompt_logs": {"latency_ms": "INTEGER"},
+        "competition_state": {
+            "ceremony_active": "BOOLEAN DEFAULT FALSE",
+            "global_announcement": "TEXT",
+            "round_cutoffs": "TEXT",
+        },
+        "teams": {
+            "is_disqualified": "BOOLEAN DEFAULT FALSE",
+            "is_spectator": "BOOLEAN DEFAULT FALSE",
+            "eliminated_in_round": "INTEGER",
+            "cooldown_until": "TIMESTAMP",
+            "warning_message": "TEXT",
+        },
     }
 
     try:

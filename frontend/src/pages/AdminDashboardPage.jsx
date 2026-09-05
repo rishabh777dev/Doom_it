@@ -23,7 +23,17 @@ import {
   Save,
   Lock,
   Copy,
-  Filter
+  Filter,
+  ShieldAlert,
+  Radio,
+  Activity,
+  Trophy,
+  Sparkles,
+  Eye,
+  Ban,
+  UserCheck,
+  Shield,
+  Award
 } from 'lucide-react';
 import AdminNavbar from '../components/AdminNavbar';
 import {
@@ -38,6 +48,15 @@ import {
   apiUpdateLevelSecret,
   apiGetAdminSubmissions,
   apiExportLogs,
+  apiToggleCeremony,
+  apiSetAnnouncement,
+  apiClearAnnouncement,
+  apiGetQualificationStatus,
+  apiExecuteRoundCutoff,
+  apiToggleTeamSpectator,
+  apiGetAntiCheatIncidents,
+  apiExecuteAntiCheatAction,
+  apiGetWarRoomMatrix,
 } from '../services/api';
 
 export default function AdminDashboardPage({ timerState, onStateUpdated }) {
@@ -81,6 +100,18 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
   const [logSearchQuery, setLogSearchQuery] = useState('');
   const [copiedLogId, setCopiedLogId] = useState(null);
 
+  // Competition Control & Anti-Cheat States
+  const [announcementMsg, setAnnouncementMsg] = useState('');
+  const [announcementSeverity, setAnnouncementSeverity] = useState('warning');
+  const [qualificationData, setQualificationData] = useState(null);
+  const [cutoffTargetRound, setCutoffTargetRound] = useState(1);
+  const [antiCheatIncidents, setAntiCheatIncidents] = useState([]);
+  const [antiCheatFilter, setAntiCheatFilter] = useState('ALL');
+  const [warRoomMatrix, setWarRoomMatrix] = useState(null);
+  const [warnModalTeam, setWarnModalTeam] = useState(null);
+  const [warnMessageInput, setWarnMessageInput] = useState('');
+  const [incidentDetailModal, setIncidentDetailModal] = useState(null);
+
   // UI States
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -117,14 +148,20 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
   const fetchCoreData = async (quiet = false) => {
     if (!quiet) setIsRefreshing(true);
     try {
-      const [parts, lvls, subs] = await Promise.all([
+      const [parts, lvls, subs, quals, incs, matrix] = await Promise.all([
         apiGetAdminParticipants().catch(() => []),
         apiGetAdminLevels().catch(() => []),
         apiGetAdminSubmissions(2000).catch(() => []),
+        apiGetQualificationStatus().catch(() => null),
+        apiGetAntiCheatIncidents().catch(() => []),
+        apiGetWarRoomMatrix().catch(() => null),
       ]);
       setParticipants(parts);
       setLevels(lvls);
       setSubmissions(subs);
+      if (quals) setQualificationData(quals);
+      if (incs) setAntiCheatIncidents(incs);
+      if (matrix) setWarRoomMatrix(matrix);
     } catch (e) {
       console.error('Data load error:', e);
     } finally {
@@ -161,6 +198,15 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
       return true;
     });
   }, [submissions, logTeamFilter, logLevelFilter, logOutcomeFilter, logSearchQuery]);
+
+  // Computed filtered anti-cheat incidents
+  const filteredIncidents = useMemo(() => {
+    return antiCheatIncidents.filter((inc) => {
+      if (antiCheatFilter === 'ALL') return true;
+      return inc.incident_type === antiCheatFilter;
+    });
+  }, [antiCheatIncidents, antiCheatFilter]);
+
 
   // Sync editor fields whenever selected level changes
   const activeLevel = useMemo(() => {
@@ -231,6 +277,124 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
       setLoading(false);
     }
   };
+
+  // --------------------------------------------------------------------------
+  // CEREMONY, BROADCASTS, ROUND CUTOFF & ANTI-CHEAT ACTIONS
+  // --------------------------------------------------------------------------
+  const handleToggleCeremony = async () => {
+    setLoading(true);
+    try {
+      const res = await apiToggleCeremony();
+      showToast(
+        'success',
+        res.ceremony_active
+          ? '🏆 Winner Ceremony Mode Activated! Public podium unlocked at /winners'
+          : '🔒 Ceremony Mode Deactivated.'
+      );
+      if (onStateUpdated) onStateUpdated();
+    } catch (err) {
+      showToast('error', `Failed to toggle ceremony: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBroadcastAnnouncement = async (e) => {
+    if (e) e.preventDefault();
+    if (!announcementMsg.trim()) {
+      showToast('error', 'Please enter an announcement message.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await apiSetAnnouncement({
+        message: announcementMsg.trim(),
+        severity: announcementSeverity,
+      });
+      setAnnouncementMsg('');
+      showToast('success', 'Global broadcast banner sent to all contestant screens!');
+      if (onStateUpdated) onStateUpdated();
+    } catch (err) {
+      showToast('error', `Broadcast failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearAnnouncement = async () => {
+    setLoading(true);
+    try {
+      await apiClearAnnouncement();
+      showToast('info', 'Global announcement banner cleared.');
+      if (onStateUpdated) onStateUpdated();
+    } catch (err) {
+      showToast('error', `Failed to clear announcement: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExecuteCutoff = (round) => {
+    const cutoffNum = round === 1 ? 10 : 5;
+    setConfirmModal({
+      title: `Execute Round ${round} Qualification Cutoff?`,
+      description: `This will advance the top ${cutoffNum} teams to Round ${round + 1} and automatically place all other teams into read-only Spectator Mode. An announcement will also be broadcast to all contestants.`,
+      confirmText: `Execute Round ${round} Cutoff`,
+      confirmClass: 'bg-rose-600 hover:bg-rose-700 text-white',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        setLoading(true);
+        showToast('info', `Executing Round ${round} cutoff...`);
+        try {
+          const res = await apiExecuteRoundCutoff(round);
+          setQualificationData(res);
+          showToast('success', `Round ${round} cutoff executed! Top ${cutoffNum} teams advanced.`);
+          fetchCoreData(true);
+          if (onStateUpdated) onStateUpdated();
+        } catch (err) {
+          showToast('error', `Failed to execute cutoff: ${err.message}`);
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleToggleSpectator = async (teamId, teamName) => {
+    try {
+      const res = await apiToggleTeamSpectator(teamId);
+      showToast(
+        res.is_spectator ? 'info' : 'success',
+        `${teamName} is now in ${res.is_spectator ? 'Spectator (Read-Only) Mode' : 'Active Contestant Mode'}`
+      );
+      fetchCoreData(true);
+    } catch (err) {
+      showToast('error', `Failed to toggle spectator: ${err.message}`);
+    }
+  };
+
+  const handleAntiCheatAction = async (teamId, action, message = null, incidentId = null) => {
+    try {
+      await apiExecuteAntiCheatAction({
+        team_id: teamId,
+        action,
+        message,
+        incident_id: incidentId,
+      });
+      showToast('success', `Anti-cheat action '${action}' applied successfully.`);
+      fetchCoreData(true);
+    } catch (err) {
+      showToast('error', `Action failed: ${err.message}`);
+    }
+  };
+
+  const openWarnModal = (teamId, teamName, incidentId = null) => {
+    setWarnModalTeam({ id: teamId, name: teamName, incident_id: incidentId });
+    setWarnMessageInput(
+      'Notice from Competition Arbiters: Suspicious activity (rapid automation or cadence anomaly) was detected on your terminal. Please adhere to CTF fair-play rules.'
+    );
+  };
+
 
   // --------------------------------------------------------------------------
   // TEAM NAME & PASSWORD EDITING
@@ -574,6 +738,156 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
           </div>
         )}
 
+        {/* Arbiter Warning Modal */}
+        {warnModalTeam && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+            <div className="w-full max-w-md bg-white rounded-3xl border-2 border-slate-900 shadow-2xl p-6 sm:p-7 space-y-4 animate-scale-up">
+              <div className="flex items-center justify-between">
+                <span className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-amber-500" />
+                  <span>Issue Warning: {warnModalTeam.name}</span>
+                </span>
+                <button
+                  onClick={() => setWarnModalTeam(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                This warning banner will pop up as an unskippable modal on the contestant’s screen, requiring them to acknowledge fair-play rules before proceeding.
+              </p>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Arbiter Warning Message
+                </label>
+                <textarea
+                  rows={3}
+                  value={warnMessageInput}
+                  onChange={(e) => setWarnMessageInput(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-900 focus:bg-white"
+                  placeholder="Enter custom warning text..."
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setWarnModalTeam(null)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 border border-slate-200 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await handleAntiCheatAction(warnModalTeam.id, 'warn', warnMessageInput, warnModalTeam.incident_id);
+                    setWarnModalTeam(null);
+                  }}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Send Official Warning</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Anti-Cheat Incident Forensic Detail Modal */}
+        {incidentDetailModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+            <div className="w-full max-w-lg bg-white rounded-3xl border-2 border-slate-900 shadow-2xl p-6 space-y-4 animate-scale-up">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-rose-600" />
+                  <span className="font-display font-bold text-base text-slate-900">
+                    Incident Forensic Telemetry
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIncidentDetailModal(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between border-b border-slate-100 pb-2">
+                  <span className="text-slate-500 font-semibold">Flagged Team:</span>
+                  <span className="font-bold text-slate-900">{incidentDetailModal.team_name}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-2">
+                  <span className="text-slate-500 font-semibold">Anomaly Category:</span>
+                  <span className="font-mono font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                    {incidentDetailModal.incident_type}
+                  </span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-2">
+                  <span className="text-slate-500 font-semibold">Severity Rating:</span>
+                  <span className={`font-bold px-2 py-0.5 rounded ${
+                    incidentDetailModal.severity === 'CRITICAL' || incidentDetailModal.severity === 'HIGH'
+                      ? 'bg-rose-100 text-rose-700'
+                      : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    {incidentDetailModal.severity}
+                  </span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-2">
+                  <span className="text-slate-500 font-semibold">Timestamp:</span>
+                  <span className="font-mono text-slate-700">
+                    {new Date(incidentDetailModal.created_at).toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-semibold block mb-1">Diagnostic Log & Client Telemetry:</span>
+                  <div className="bg-slate-950 text-emerald-400 p-3.5 rounded-xl font-mono text-[11px] whitespace-pre-wrap max-h-44 overflow-y-auto select-text border border-slate-800 leading-relaxed">
+                    {incidentDetailModal.details}
+                  </div>
+                </div>
+                {incidentDetailModal.prompt_snippet && (
+                  <div>
+                    <span className="text-slate-500 font-semibold block mb-1">Captured Payload Snippet:</span>
+                    <div className="bg-slate-50 text-slate-800 p-3 rounded-xl font-mono text-[11px] whitespace-pre-wrap max-h-28 overflow-y-auto border border-slate-200 select-text">
+                      {incidentDetailModal.prompt_snippet}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const inc = incidentDetailModal;
+                      setIncidentDetailModal(null);
+                      openWarnModal(inc.team_id, inc.team_name, inc.id);
+                    }}
+                    className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>Warn Team</span>
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await handleAntiCheatAction(incidentDetailModal.team_id, 'cooldown_60', null, incidentDetailModal.id);
+                      setIncidentDetailModal(null);
+                    }}
+                    className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1"
+                  >
+                    <span>60s Cooldown</span>
+                  </button>
+                </div>
+                <button
+                  onClick={() => setIncidentDetailModal(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           
           {/* Top Page Header (Flat, Clean, Fast) */}
@@ -642,7 +956,9 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
           <div className="flex border-b border-slate-200 space-x-2 sm:space-x-4 overflow-x-auto no-scrollbar">
             {[
               { id: 'stage', label: 'Competition Stage', icon: Play },
-              { id: 'teams', label: `Teams Management (${participants.length})`, icon: Users },
+              { id: 'teams', label: `Teams (${participants.length})`, icon: Users },
+              { id: 'anticheat', label: `Anti-Cheat Radar (${antiCheatIncidents.length})`, icon: ShieldAlert },
+              { id: 'warroom', label: 'War Room Attack Grid', icon: Activity },
               { id: 'secrets', label: 'Live Sentinel & System Prompt', icon: Key },
               { id: 'logs', label: `Submission Prompt Logs (${submissions.length})`, icon: Terminal },
             ].map((tab) => {
@@ -768,6 +1084,264 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                       : 'FREEZE ALL SUBMISSIONS'}
                   </span>
                 </button>
+              </div>
+
+              {/* Winner Ceremony Mode Controller */}
+              <div className={`rounded-3xl border-2 p-6 shadow-card transition-all ${
+                timerState?.ceremony_active
+                  ? 'bg-gradient-to-br from-amber-500/10 via-amber-50/60 to-purple-500/10 border-amber-500 shadow-amber-500/10'
+                  : 'bg-white border-slate-900'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700">
+                        <Trophy className="w-4 h-4" />
+                      </div>
+                      <span className="font-display font-bold text-base text-slate-900">
+                        Winner Announcement & Olympic Ceremony Podium
+                      </span>
+                      {timerState?.ceremony_active ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
+                          PODIUM LIVE
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-300">
+                          PODIUM LOCKED
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed max-w-xl">
+                      Unlocks the dramatic stepped ceremony podium at <code className="text-amber-700 font-mono font-bold bg-amber-50 px-1 py-0.5 rounded">/winners</code> for all contestants and public viewers. Features sequential reveals (Bronze 3rd → Silver 2nd → Gold Champion 1st), synthesized fanfare audio chords, and celebration confetti.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <a
+                      href="/winners"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-200 transition-all"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Preview Podium</span>
+                    </a>
+                    <button
+                      onClick={handleToggleCeremony}
+                      disabled={loading}
+                      className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer ${
+                        timerState?.ceremony_active
+                          ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                          : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950'
+                      }`}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>
+                        {timerState?.ceremony_active ? 'LOCK CEREMONY PODIUM' : 'ACTIVATE WINNER PODIUM'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Global Live Announcement Broadcast Ticker */}
+              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Radio className="w-5 h-5 text-brand-blue" />
+                    <span className="font-display font-bold text-base text-slate-900">
+                      Global Live Announcement Broadcast Ticker
+                    </span>
+                  </div>
+                  {timerState?.global_announcement && (
+                    <button
+                      onClick={handleClearAnnouncement}
+                      disabled={loading}
+                      className="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-[11px] font-bold cursor-pointer transition-all"
+                    >
+                      Clear Active Ticker
+                    </button>
+                  )}
+                </div>
+
+                {/* Active Broadcast Preview if set */}
+                {timerState?.global_announcement && (
+                  <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs font-medium ${
+                    timerState.global_announcement.severity === 'danger'
+                      ? 'bg-rose-50 border-rose-300 text-rose-900'
+                      : timerState.global_announcement.severity === 'warning'
+                      ? 'bg-amber-50 border-amber-300 text-amber-900'
+                      : timerState.global_announcement.severity === 'success'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                      : 'bg-blue-50 border-blue-300 text-blue-900'
+                  }`}>
+                    <div className="flex items-center gap-2.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-current"></span>
+                      </span>
+                      <span>
+                        <strong>BROADCASTING:</strong> {timerState.global_announcement.message}
+                      </span>
+                    </div>
+                    <span className="text-[10px] uppercase font-bold opacity-75">
+                      {timerState.global_announcement.severity}
+                    </span>
+                  </div>
+                )}
+
+                <form onSubmit={handleBroadcastAnnouncement} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Ticker Message (Instant overlay on all participant viewports)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 📢 Round 1 has 15 minutes remaining! Finalize your prompt submissions."
+                      value={announcementMsg}
+                      onChange={(e) => setAnnouncementMsg(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-slate-900 focus:bg-white"
+                    />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-slate-600">Severity:</span>
+                      {[
+                        { id: 'warning', label: 'Warning', class: 'bg-amber-50 text-amber-800 border-amber-300' },
+                        { id: 'danger', label: 'Critical / Danger', class: 'bg-rose-50 text-rose-800 border-rose-300' },
+                        { id: 'info', label: 'Info', class: 'bg-blue-50 text-blue-800 border-blue-300' },
+                        { id: 'success', label: 'Success', class: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
+                      ].map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setAnnouncementSeverity(s.id)}
+                          className={`px-3 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            announcementSeverity === s.id
+                              ? `${s.class} ring-2 ring-brand-blue`
+                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading || !announcementMsg.trim()}
+                      className="px-5 py-2.5 bg-brand-blue hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Radio className="w-3.5 h-3.5" />
+                      <span>Push Broadcast Banner</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Round Elimination & Qualification Cutoff */}
+              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-brand-blue" />
+                      <span className="font-display font-bold text-base text-slate-900">
+                        Tournament Round Cutoff & Elimination Manager
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Tournament Rules: <strong>Round 1</strong> eliminates down to <strong>Top 10</strong> teams. <strong>Round 2</strong> eliminates down to <strong>Top 5</strong> teams. Eliminated teams automatically enter read-only Spectator Mode.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={cutoffTargetRound}
+                      onChange={(e) => setCutoffTargetRound(Number(e.target.value))}
+                      className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-900"
+                    >
+                      <option value={1}>Round 1 Cutoff (Top 10 Advance)</option>
+                      <option value={2}>Round 2 Cutoff (Top 5 Advance)</option>
+                    </select>
+
+                    <button
+                      onClick={() => handleExecuteCutoff(cutoffTargetRound)}
+                      disabled={loading}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                      <span>Execute Cutoff</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Qualification Roster Preview Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                        <th className="py-2 px-3">Rank</th>
+                        <th className="py-2 px-3">Team Name</th>
+                        <th className="py-2 px-3">Score</th>
+                        <th className="py-2 px-3">Solved</th>
+                        <th className="py-2 px-3">Qualification Status</th>
+                        <th className="py-2 px-3 text-right">Spectator Control</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {(qualificationData?.teams || participants.map((p, idx) => ({
+                        team_id: p.id,
+                        team_name: p.team_name,
+                        rank: idx + 1,
+                        total_score: p.total_score,
+                        levels_solved: p.current_level_id - 1,
+                        advancing: idx < (cutoffTargetRound === 1 ? 10 : 5) && !p.is_disqualified,
+                        is_spectator: p.is_spectator,
+                        is_disqualified: p.is_disqualified,
+                      }))).slice(0, 15).map((team) => (
+                        <tr key={team.team_id} className={`hover:bg-slate-50/80 transition-colors ${team.advancing ? 'bg-emerald-50/30' : 'bg-slate-50/20'}`}>
+                          <td className="py-2 px-3 font-bold text-slate-700">#{team.rank}</td>
+                          <td className="py-2 px-3 font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>{team.team_name}</span>
+                            {team.is_disqualified && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-black">DISQUALIFIED</span>
+                            )}
+                          </td>
+                          <td className="py-2 px-3 font-mono font-bold text-brand-blue">{team.total_score}</td>
+                          <td className="py-2 px-3">{team.levels_solved} Levels</td>
+                          <td className="py-2 px-3">
+                            {team.is_disqualified ? (
+                              <span className="text-rose-600 font-bold">Disqualified</span>
+                            ) : team.advancing ? (
+                              <span className="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-100/80 px-2 py-0.5 rounded-full text-[11px]">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>Advances (Top {cutoffTargetRound === 1 ? 10 : 5})</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-full text-[11px]">
+                                <span>Eliminated / Spectator</span>
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 px-3 text-right">
+                            <button
+                              onClick={() => handleToggleSpectator(team.team_id, team.team_name)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                                team.is_spectator
+                                  ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                                  : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                              }`}
+                              title="Toggle spectator mode"
+                            >
+                              {team.is_spectator ? 'Re-activate Active' : 'Force Spectator'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
             </div>
@@ -1469,6 +2043,403 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
 
             </div>
           )}
+
+          {/* ========================================================================= */}
+          {/* TAB 5: ANTI-CHEAT RADAR & FAIR PLAY INTEGRITY                             */}
+          {/* ========================================================================= */}
+          {activeTab === 'anticheat' && (
+            <div className="space-y-6">
+              
+              {/* Header & Heuristics Overview */}
+              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <ShieldAlert className="w-5 h-5 text-rose-600" />
+                      <span className="font-display font-bold text-base text-slate-900">
+                        Anti-Cheat Surveillance & Fair Play Radar
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 max-w-2xl leading-relaxed">
+                      Continuous integrity analysis detecting client-side automation, automated browser scripts/extensions, invisible honeypot tripwires, typing velocity bursts (&gt;80 chars/s without paste), rapid submission floods, and cross-team payload similarity collusion.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => fetchCoreData(false)}
+                    disabled={isRefreshing}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-slate-200"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-brand-blue' : ''}`} />
+                    <span>Refresh Radar</span>
+                  </button>
+                </div>
+
+                {/* Radar Metric Stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Flags</div>
+                    <div className="text-xl font-display font-black text-slate-900">{antiCheatIncidents.length}</div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 space-y-1">
+                    <div className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Honeypot Trips</div>
+                    <div className="text-xl font-display font-black text-rose-700">
+                      {antiCheatIncidents.filter((i) => i.incident_type === 'HONEYPOT_TRAP').length}
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-1">
+                    <div className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Bot Cadence / Spam</div>
+                    <div className="text-xl font-display font-black text-amber-700">
+                      {antiCheatIncidents.filter((i) => i.incident_type === 'BOT_CADENCE' || i.incident_type === 'SPAM_FLOOD').length}
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 space-y-1">
+                    <div className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">Active Penalties</div>
+                    <div className="text-xl font-display font-black text-purple-700">
+                      {participants.filter((p) => p.is_disqualified || p.cooldown_until).length}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Incidents Filter & Ledger */}
+              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Integrity Incidents ({filteredIncidents.length})
+                  </span>
+
+                  {/* Filter chips */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[
+                      { id: 'ALL', label: 'All Incidents' },
+                      { id: 'HONEYPOT_TRAP', label: 'Honeypots' },
+                      { id: 'BOT_CADENCE', label: 'Bot Velocity' },
+                      { id: 'SPAM_FLOOD', label: 'Spam Floods' },
+                      { id: 'PAYLOAD_COLLUSION', label: 'Collusion' },
+                      { id: 'SUSPECTED_EXTENSION', label: 'Script Tamper' },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => setAntiCheatFilter(f.id)}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          antiCheatFilter === f.id
+                            ? 'bg-brand-blue text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {filteredIncidents.length > 0 ? (
+                  <div className="space-y-3">
+                    {filteredIncidents.map((inc) => (
+                      <div
+                        key={inc.id}
+                        className="p-4 rounded-2xl border border-slate-200 hover:border-slate-300 transition-all bg-white shadow-xs space-y-3"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                              {inc.team_name}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                              inc.incident_type === 'HONEYPOT_TRAP'
+                                ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                                : inc.incident_type === 'BOT_CADENCE'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : inc.incident_type === 'PAYLOAD_COLLUSION'
+                                ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                : 'bg-slate-100 text-slate-800 border border-slate-300'
+                            }`}>
+                              {inc.incident_type}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              inc.severity === 'CRITICAL' || inc.severity === 'HIGH'
+                                ? 'bg-rose-50 text-rose-700'
+                                : 'bg-amber-50 text-amber-700'
+                            }`}>
+                              {inc.severity}
+                            </span>
+                            <span className="text-[11px] font-mono text-slate-400">
+                              {new Date(inc.created_at).toLocaleTimeString()}
+                            </span>
+                          </div>
+
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold w-fit ${
+                            inc.status === 'WARNED'
+                              ? 'bg-blue-100 text-blue-800'
+                              : inc.status === 'PENALIZED'
+                              ? 'bg-rose-100 text-rose-800'
+                              : inc.status === 'PARDONED'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            STATUS: {inc.status}
+                          </span>
+                        </div>
+
+                        {/* Forensics Preview */}
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono text-slate-700 truncate">
+                          {inc.details}
+                        </div>
+
+                        {/* Quick Action Toolbar */}
+                        <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+                          <button
+                            onClick={() => setIncidentDetailModal(inc)}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Forensic Details</span>
+                          </button>
+
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <button
+                              onClick={() => openWarnModal(inc.team_id, inc.team_name, inc.id)}
+                              className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all"
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5" />
+                              <span>Warn</span>
+                            </button>
+                            <button
+                              onClick={() => handleAntiCheatAction(inc.team_id, 'cooldown_60', null, inc.id)}
+                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-all"
+                              title="Prevent submission for 60 seconds"
+                            >
+                              <span>Cooldown 60s</span>
+                            </button>
+                            <button
+                              onClick={() => handleAntiCheatAction(inc.team_id, 'cooldown_300', null, inc.id)}
+                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-all"
+                              title="Prevent submission for 5 minutes"
+                            >
+                              <span>Cooldown 5m</span>
+                            </button>
+                            <button
+                              onClick={() => handleAntiCheatAction(inc.team_id, 'disqualify', null, inc.id)}
+                              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-xs"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                              <span>Disqualify</span>
+                            </button>
+                            <button
+                              onClick={() => handleAntiCheatAction(inc.team_id, 'pardon', null, inc.id)}
+                              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all"
+                            >
+                              <UserCheck className="w-3.5 h-3.5" />
+                              <span>Pardon</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-12 bg-slate-50 rounded-2xl border border-slate-200 text-center space-y-2">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+                    <h4 className="text-sm font-bold text-slate-800">Clean Fair-Play Environment</h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      No anomalies or automated tripwires have been flagged under this filter. The anti-cheat radar is actively scanning every prompt keystroke and socket payload.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB 6: WAR ROOM ATTACK MATRIX                                             */}
+          {/* ========================================================================= */}
+          {activeTab === 'warroom' && (
+            <div className="space-y-6">
+              
+              {/* War Room Header */}
+              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-brand-blue" />
+                      <span className="font-display font-bold text-base text-slate-900">
+                        War Room Live Attack & Defense Matrix
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 max-w-xl">
+                      Live 2D cross-grid tracking every contestant team against all 12 defense sentinels. Watch real-time infiltration attempts, breaches, and first-blood milestones.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => fetchCoreData(false)}
+                    disabled={isRefreshing}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-slate-200"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-brand-blue' : ''}`} />
+                    <span>Sync Grid</span>
+                  </button>
+                </div>
+
+                {/* Matrix Metrics */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Breaches</div>
+                    <div className="text-xl font-display font-black text-slate-900">
+                      {warRoomMatrix?.total_breaches ?? submissions.filter((s) => s.success).length}
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 space-y-1">
+                    <div className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">First Bloods</div>
+                    <div className="text-xl font-display font-black text-rose-700">
+                      {warRoomMatrix?.first_blood_owners ? Object.keys(warRoomMatrix.first_blood_owners).length : 0}
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1">
+                    <div className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Active Teams</div>
+                    <div className="text-xl font-display font-black text-emerald-700">
+                      {participants.length}
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 space-y-1">
+                    <div className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Total Submissions</div>
+                    <div className="text-xl font-display font-black text-blue-700">
+                      {submissions.length}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2D Matrix Table */}
+              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-4">
+                
+                {/* Legend */}
+                <div className="flex items-center gap-4 flex-wrap text-xs font-semibold text-slate-600 pb-2 border-b border-slate-100">
+                  <span className="font-bold text-slate-900">Legend:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded bg-rose-600 text-white font-black text-[10px] flex items-center justify-center">🩸</span>
+                    <span>First Blood</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded bg-emerald-500 text-white font-bold text-[10px] flex items-center justify-center">✓</span>
+                    <span>Solved</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded bg-amber-100 text-amber-800 border border-amber-300 font-bold text-[10px] flex items-center justify-center">3</span>
+                    <span>Attempting</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded bg-slate-100 text-slate-300 flex items-center justify-center">•</span>
+                    <span>Unattempted</span>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-center text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                        <th className="py-2.5 px-3 text-left">Team Name</th>
+                        <th className="py-2.5 px-2 text-right">Score</th>
+                        <th className="py-2.5 px-2">Solved</th>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => (
+                          <th
+                            key={lvl}
+                            className={`py-2.5 px-1.5 min-w-[40px] ${
+                              lvl <= 5 ? 'bg-blue-50/50' : lvl <= 9 ? 'bg-purple-50/50' : 'bg-amber-50/50'
+                            }`}
+                            title={`Level ${lvl}`}
+                          >
+                            L{lvl}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {(warRoomMatrix?.teams || participants.map((p) => {
+                        const solvedList = p.completed_levels || [];
+                        const attemptsDict = p.attempts || {};
+                        const levelsMap = {};
+                        for (let l = 1; l <= 12; l++) {
+                          const solved = solvedList.includes(l);
+                          const att = attemptsDict[String(l)] || 0;
+                          levelsMap[String(l)] = {
+                            status: solved ? 'SOLVED' : att > 0 ? 'ATTEMPTING' : 'UNATTEMPTED',
+                            attempts: att,
+                            solved: solved,
+                            first_blood: false
+                          };
+                        }
+                        return {
+                          team_id: p.id,
+                          team_name: p.team_name,
+                          total_score: p.total_score,
+                          levels_solved: solvedList.length,
+                          is_disqualified: p.is_disqualified,
+                          levels: levelsMap
+                        };
+                      })).map((team) => (
+                        <tr key={team.team_id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-2.5 px-3 text-left font-bold text-slate-900 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span>{team.team_name}</span>
+                              {team.is_disqualified && (
+                                <span className="text-[9px] px-1 py-0.2 rounded bg-rose-100 text-rose-700 font-black">DQ</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-2 text-right font-mono font-bold text-brand-blue">
+                            {team.total_score}
+                          </td>
+                          <td className="py-2.5 px-2 font-bold text-slate-600">
+                            {team.levels_solved}/12
+                          </td>
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => {
+                            const cell = team.levels?.[String(lvl)] || { status: 'UNATTEMPTED', attempts: 0 };
+                            const isFirstBlood = cell.status === 'FIRST_BLOOD' || cell.first_blood;
+                            const isSolved = cell.status === 'SOLVED' || cell.solved;
+                            const isAttempting = cell.status === 'ATTEMPTING' || cell.attempts > 0;
+
+                            return (
+                              <td key={lvl} className="py-1 px-1">
+                                {isFirstBlood ? (
+                                  <div
+                                    className="w-full py-1.5 rounded bg-rose-600 text-white font-black text-[11px] shadow-sm animate-pulse cursor-help"
+                                    title={`First Blood on Level ${lvl}! Solved in ${cell.attempts || 1} attempts`}
+                                  >
+                                    🩸 1st
+                                  </div>
+                                ) : isSolved ? (
+                                  <div
+                                    className="w-full py-1.5 rounded bg-emerald-500 text-white font-bold text-[11px] shadow-sm cursor-help"
+                                    title={`Solved Level ${lvl} in ${cell.attempts || 1} attempts`}
+                                  >
+                                    ✓
+                                  </div>
+                                ) : isAttempting ? (
+                                  <div
+                                    className="w-full py-1.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-semibold text-[10px] cursor-help"
+                                    title={`${cell.attempts} attempts on Level ${lvl}`}
+                                  >
+                                    {cell.attempts}a
+                                  </div>
+                                ) : (
+                                  <div className="w-full py-1.5 rounded bg-slate-50 text-slate-300 text-xs">
+                                    •
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          )}
+
 
         </main>
       </div>

@@ -109,11 +109,15 @@ export const apiGetLevels = async () => {
   return handleResponse(res);
 };
 
-export const apiSubmitPrompt = async (prompt) => {
+export const apiSubmitPrompt = async (prompt, honeypotTrap = null, clientTelemetry = null) => {
   const res = await fetch(`${BASE_URL}/api/arena/submit`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({
+      prompt,
+      honeypot_trap: honeypotTrap,
+      client_telemetry: clientTelemetry
+    }),
   });
   return handleResponse(res);
 };
@@ -280,4 +284,107 @@ export const apiExportLogs = async (format = 'csv') => {
   a.remove();
   window.URL.revokeObjectURL(downloadUrl);
 };
+
+// ---------------- CEREMONY MODE API ----------------
+export const apiToggleCeremony = async () => {
+  const res = await fetch(`${BASE_URL}/api/admin/ceremony/toggle`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+};
+
+// ---------------- ANNOUNCEMENT BROADCAST API ----------------
+export const apiSetAnnouncement = async (message, severity = 'info') => {
+  const res = await fetch(`${BASE_URL}/api/admin/announcements`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ message, severity }),
+  });
+  return handleResponse(res);
+};
+
+export const apiClearAnnouncement = async () => {
+  const res = await fetch(`${BASE_URL}/api/admin/announcements`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+};
+
+// ---------------- TOURNAMENT QUALIFICATION & CUTOFF API ----------------
+export const apiGetQualificationStatus = async () => {
+  const res = await fetch(`${BASE_URL}/api/admin/rounds/qualification-status`, {
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+};
+
+export const apiExecuteRoundCutoff = async (targetRound) => {
+  const res = await fetch(`${BASE_URL}/api/admin/rounds/execute-cutoff`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ target_round: targetRound }),
+  });
+  return handleResponse(res);
+};
+
+export const apiToggleTeamSpectator = async (teamId) => {
+  const res = await fetch(`${BASE_URL}/api/admin/teams/${teamId}/spectator-toggle`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+};
+
+// ---------------- ANTI-CHEAT RADAR API ----------------
+export const apiGetAntiCheatIncidents = async (limit = 200) => {
+  const res = await fetch(`${BASE_URL}/api/admin/anticheat/incidents?limit=${limit}`, {
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+};
+
+export const apiExecuteAntiCheatAction = async ({ team_id, action, message, incident_id }) => {
+  const res = await fetch(`${BASE_URL}/api/admin/anticheat/action`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({
+      team_id,
+      action,
+      message,
+      incident_id,
+    }),
+  });
+  return handleResponse(res);
+};
+
+export const apiAcknowledgeWarning = async () => {
+  const res = await fetch(`${BASE_URL}/api/anticheat/acknowledge-warning`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+};
+
+export const apiReportClientAnomaly = async (anomalyType, details) => {
+  const res = await fetch(`${BASE_URL}/api/anticheat/report`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({
+      anomaly_type: anomalyType,
+      details,
+    }),
+  });
+  return handleResponse(res);
+};
+
+// ---------------- WAR ROOM ATTACK MATRIX API ----------------
+export const apiGetWarRoomMatrix = async () => {
+  const res = await fetch(`${BASE_URL}/api/admin/war-room/matrix`, {
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+};
+
 

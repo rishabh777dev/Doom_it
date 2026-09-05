@@ -56,6 +56,11 @@ export default function ArenaPage({ user }) {
   const [feedback, setFeedback] = useState(null);
   const [copiedIndex, setCopiedIndex] = useState(null);
 
+  // Anti-Cheat & Client Integrity Telemetry
+  const [honeypotTrap, setHoneypotTrap] = useState('');
+  const typingStartTimeRef = useRef(null);
+  const pasteDetectedRef = useRef(false);
+
   // Victory celebration modal state
   const [victoryData, setVictoryData] = useState({
     isOpen: false,
@@ -215,8 +220,18 @@ export default function ArenaPage({ user }) {
     setIsSubmitting(true);
     setFeedback(null);
 
+    // Capture anti-cheat typing cadence telemetry
+    const typingDurationMs = typingStartTimeRef.current ? (Date.now() - typingStartTimeRef.current) : 0;
+    const clientTelemetry = {
+      typing_duration_ms: typingDurationMs,
+      paste_detected: pasteDetectedRef.current,
+    };
+    typingStartTimeRef.current = null;
+    pasteDetectedRef.current = false;
+
     try {
-      const res = await apiSubmitPrompt(text);
+      const res = await apiSubmitPrompt(text, honeypotTrap, clientTelemetry);
+      setHoneypotTrap('');
 
       // Play receive audio FX
       playSound('receive');
@@ -601,18 +616,44 @@ export default function ArenaPage({ user }) {
 
             {/* Chat Input Bar (ChatGPT-style auto-expanding prompt box, clean & minimal) */}
             <div className="p-3 sm:p-4 bg-white border-t border-slate-200">
+              {user?.is_spectator && (
+                <div className="mb-3 p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2 shadow-xs">
+                  <Shield className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>
+                    <strong>Spectator Sandbox Active:</strong> Your team concluded the tournament in Round {user.eliminated_in_round || 1}. You may experiment with prompts, but official scoring is disabled.
+                  </span>
+                </div>
+              )}
+
               {isViewingArchived ? (
                 <div className="p-3 bg-slate-100 rounded-2xl text-center text-xs font-semibold text-slate-500">
                   Viewing archived level. Return to active battle to submit new prompts.
                 </div>
               ) : (
                 <div className="flex items-end gap-2.5 bg-slate-50 hover:bg-slate-50/80 focus-within:bg-white border-2 border-slate-300 focus-within:border-brand-blue focus-within:ring-2 focus-within:ring-brand-blue/10 rounded-2xl p-2 pl-4 transition-all shadow-xs">
+                  {/* Invisible Honeypot Trap Input to catch browser extensions & automated autofill scripts */}
+                  <input
+                    type="text"
+                    name="bot_security_probe_check"
+                    value={honeypotTrap}
+                    onChange={(e) => setHoneypotTrap(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    className="opacity-0 absolute -top-[9999px] -left-[9999px] w-0 h-0 pointer-events-none"
+                  />
                   <textarea
                     ref={textareaRef}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={`Message ${level.title}...`}
+                    onKeyDown={(e) => {
+                      if (!typingStartTimeRef.current) typingStartTimeRef.current = Date.now();
+                      handleKeyDown(e);
+                    }}
+                    onPaste={() => {
+                      pasteDetectedRef.current = true;
+                    }}
+                    placeholder={user?.is_spectator ? "Spectator Sandbox Mode (Scoring disabled)..." : `Message ${level.title}...`}
                     disabled={isSubmitting}
                     rows={1}
                     className="flex-1 resize-none bg-transparent focus:outline-none text-sm text-slate-800 placeholder-slate-400 py-1 min-h-[44px] max-h-[180px] leading-relaxed overflow-y-auto"

@@ -130,6 +130,20 @@ export default function Navbar({ user, timerState }) {
                 <Terminal className="w-4 h-4 stroke-[2.5]" />
                 <span>Play Arena</span>
               </Link>
+
+              {timerState?.ceremony_active && (
+                <Link
+                  to="/winners"
+                  className={`px-3.5 py-2 rounded-xl text-sm font-black transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
+                    isActive('/winners')
+                      ? 'bg-amber-400 text-amber-950 shadow-md shadow-amber-400/40'
+                      : 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 animate-pulse'
+                  }`}
+                >
+                  <Trophy className="w-4 h-4 text-amber-600" />
+                  <span>Podium 🏆</span>
+                </Link>
+              )}
             </>
           )}
         </nav>
@@ -174,9 +188,14 @@ export default function Navbar({ user, timerState }) {
 
           {user ? (
             <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 max-w-[140px] truncate hover:bg-slate-200/70 transition-colors">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 max-w-[180px] truncate hover:bg-slate-200/70 transition-colors">
                 <User className="w-3.5 h-3.5 text-brand-blue shrink-0" />
                 <span className="truncate">{user.username}</span>
+                {user.is_spectator && (
+                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 shrink-0">
+                    Spectator
+                  </span>
+                )}
               </div>
               <button
                 onClick={handleLogout}
@@ -269,6 +288,16 @@ export default function Navbar({ user, timerState }) {
                   <Terminal className="w-4 h-4" />
                   <span>Enter Battle Arena</span>
                 </Link>
+
+                {timerState?.ceremony_active && (
+                  <Link
+                    to="/winners"
+                    className="p-3 rounded-2xl text-sm font-black flex items-center gap-2.5 bg-amber-400 text-amber-950 shadow-md shadow-amber-400/30"
+                  >
+                    <Trophy className="w-4 h-4 text-amber-900" />
+                    <span>Hall of Champions 🏆</span>
+                  </Link>
+                )}
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between px-1">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-800">

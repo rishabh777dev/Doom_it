@@ -48,12 +48,20 @@ class Team(Base):
     password = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+    # Anti-cheat, qualification & arbiter fields
+    is_disqualified = Column(Boolean, default=False, nullable=False)
+    is_spectator = Column(Boolean, default=False, nullable=False)
+    eliminated_in_round = Column(Integer, nullable=True)
+    cooldown_until = Column(DateTime, nullable=True)
+    warning_message = Column(Text, nullable=True)
+
     # Relationships
     progress = relationship("Progress", uselist=False, back_populates="team", cascade="all, delete-orphan")
     score_summary = relationship("Score", uselist=False, back_populates="team", cascade="all, delete-orphan")
     prompt_logs = relationship("PromptLog", back_populates="team", cascade="all, delete-orphan")
     sessions = relationship("Session", back_populates="team", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="team")
+    incidents = relationship("AntiCheatIncident", back_populates="team", cascade="all, delete-orphan")
 
 class Progress(Base):
     __tablename__ = "progress"
@@ -143,6 +151,9 @@ class CompetitionState(Base):
     end_time = Column(DateTime, nullable=True)
     current_round_id = Column(Integer, default=1, nullable=False)
     emergency_disable_submissions = Column(Boolean, default=False, nullable=False)
+    ceremony_active = Column(Boolean, default=False, nullable=False)
+    global_announcement = Column(JSON, nullable=True)
+    round_cutoffs = Column(JSON, default=dict, nullable=False)
 
 
 class Session(Base):
@@ -178,3 +189,18 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     team = relationship("Team", back_populates="audit_logs")
+
+class AntiCheatIncident(Base):
+    __tablename__ = "anti_cheat_incidents"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_id = Column(GUID(), ForeignKey("teams.id", ondelete="CASCADE"), nullable=False)
+    incident_type = Column(String(50), nullable=False)  # RAPID_BURST, CROSS_TEAM_SIMILARITY, HONEYPOT_TRIGGERED, BOT_CADENCE_ANOMALY, SUSPECTED_EXTENSION
+    severity = Column(String(20), default="MEDIUM", nullable=False)  # LOW, MEDIUM, HIGH, CRITICAL
+    details = Column(Text, nullable=False)
+    prompt_snippet = Column(Text, nullable=True)
+    status = Column(String(20), default="FLAGGED", nullable=False)  # FLAGGED, WARNED, PARDONED, PENALIZED
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    team = relationship("Team", back_populates="incidents")
+

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 from datetime import datetime
 import uuid
 
@@ -18,6 +18,11 @@ class UserResponse(BaseModel):
     id: Union[int, uuid.UUID]
     username: str
     role: str
+    is_disqualified: bool = False
+    is_spectator: bool = False
+    eliminated_in_round: Optional[int] = None
+    warning_message: Optional[str] = None
+    cooldown_until: Optional[datetime] = None
     created_at: datetime
 
     class Config:
@@ -40,6 +45,11 @@ class ParticipantResponse(BaseModel):
     team_name: str
     current_level_id: int
     total_score: int
+    is_disqualified: bool = False
+    is_spectator: bool = False
+    eliminated_in_round: Optional[int] = None
+    warning_message: Optional[str] = None
+    cooldown_until: Optional[datetime] = None
     last_login_at: Optional[datetime] = None
     created_at: datetime
 
@@ -97,6 +107,8 @@ class HintRevealResponse(BaseModel):
 # Submission Schemas
 class PromptSubmit(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=4000)
+    honeypot_trap: Optional[str] = None
+    client_telemetry: Optional[dict] = None
 
 class ScoreBreakdown(BaseModel):
     level_id: int
@@ -179,12 +191,15 @@ class TimerResponse(BaseModel):
     end_time: Optional[datetime] = None
     current_round_id: int
     emergency_disable_submissions: bool
+    ceremony_active: bool = False
+    global_announcement: Optional[dict] = None
 
 class CompetitionStateUpdate(BaseModel):
     status: Optional[str] = None
     duration_minutes: Optional[int] = None
     current_round_id: Optional[int] = None
     emergency_disable_submissions: Optional[bool] = None
+    ceremony_active: Optional[bool] = None
 
 # Admin Dashboard Audit / Submissions Log View
 class AdminSubmissionLog(BaseModel):
@@ -232,3 +247,79 @@ class LevelSecretUpdate(BaseModel):
     system_prompt: Optional[str] = Field(None, max_length=12000)
     hint_text: Optional[str] = Field(None, max_length=2000)
     hint_text_2: Optional[str] = Field(None, max_length=2000)
+
+# Anti-Cheat & Fair Play Schemas
+class AntiCheatIncidentResponse(BaseModel):
+    id: int
+    team_id: Union[int, uuid.UUID, str]
+    team_name: str
+    incident_type: str
+    severity: str
+    details: str
+    prompt_snippet: Optional[str] = None
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class AntiCheatActionRequest(BaseModel):
+    team_id: Union[int, uuid.UUID, str]
+    action: str  # 'warn', 'cooldown_60', 'cooldown_300', 'disqualify', 'pardon'
+    message: Optional[str] = None
+    incident_id: Optional[int] = None
+
+class ClientAntiCheatReport(BaseModel):
+    anomaly_type: str
+    details: str
+
+# Broadcast Announcement Schemas
+class AnnouncementCreate(BaseModel):
+    message: str = Field(..., min_length=1, max_length=500)
+    severity: str = "info"  # 'info', 'warning', 'critical', 'success'
+
+# Tournament Round Cutoff & Elimination Schemas
+class RoundCutoffExecuteRequest(BaseModel):
+    target_round: int  # 1 (Top 10 advance) or 2 (Top 5 advance)
+
+class RoundQualificationTeam(BaseModel):
+    team_id: Union[int, uuid.UUID, str]
+    team_name: str
+    rank: int
+    total_score: int
+    levels_solved: int
+    advancing: bool
+    is_spectator: bool
+    is_disqualified: bool
+
+class RoundQualificationStatusResponse(BaseModel):
+    current_round: int
+    advancing_cutoff: int
+    cutoff_executed: bool
+    teams: List[RoundQualificationTeam]
+
+# War Room Live Attack Matrix Schemas
+class WarRoomLevelStatus(BaseModel):
+    level_id: int
+    round_id: int
+    status: str  # 'unattempted', 'attempting', 'solved'
+    attempts: int = 0
+    score_earned: int = 0
+    first_blood: bool = False
+    solved_at: Optional[datetime] = None
+
+class WarRoomTeamRow(BaseModel):
+    team_id: Union[int, uuid.UUID, str]
+    team_name: str
+    total_score: int
+    levels_solved: int
+    is_spectator: bool
+    is_disqualified: bool
+    levels: List[WarRoomLevelStatus]
+
+class WarRoomMatrixResponse(BaseModel):
+    teams: List[WarRoomTeamRow]
+    total_breaches: int
+    first_blood_owners: Dict[int, str]  # level_id -> team_name
+    hardest_level: Optional[int] = None
+

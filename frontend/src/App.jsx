@@ -10,12 +10,15 @@ import RulesPage from './pages/RulesPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import LevelsPage from './pages/LevelsPage';
 import ArenaPage from './pages/ArenaPage';
+import WinnersPage from './pages/WinnersPage';
 
 // Admin Isolated Pages
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import SessionSupersededModal from './components/SessionSupersededModal';
 import ErrorBoundary from './components/ErrorBoundary';
+import GlobalAnnouncementBanner from './components/GlobalAnnouncementBanner';
+import TeamWarningModal from './components/TeamWarningModal';
 
 import { apiGetTimer, apiGetMe, getToken } from './services/api';
 
@@ -91,10 +94,19 @@ function AppContent() {
         isOpen={sessionSuperseded}
         onClose={() => setSessionSuperseded(false)}
       />
+
+      {/* Fair Play Arbiter Warning Modal */}
+      <TeamWarningModal
+        warningMessage={user?.warning_message}
+        onAcknowledged={loadUser}
+      />
       
       {/* Show Participant Navbar ONLY for non-admin routes */}
       {!isAdminRoute && (
-        <Navbar user={user} timerState={timerState} />
+        <>
+          <Navbar user={user} timerState={timerState} />
+          <GlobalAnnouncementBanner timerState={timerState} />
+        </>
       )}
 
       {/* Main Routed Content */}
@@ -117,7 +129,9 @@ function AppContent() {
               }
             />
             <Route path="/rules" element={<RulesPage />} />
-            <Route path="/leaderboard" element={<LeaderboardPage user={user} />} />
+            <Route path="/leaderboard" element={<LeaderboardPage user={user} timerState={timerState} />} />
+            <Route path="/winners" element={<WinnersPage timerState={timerState} user={user} />} />
+            <Route path="/podium" element={<Navigate to="/winners" replace />} />
             <Route
               path="/login"
               element={

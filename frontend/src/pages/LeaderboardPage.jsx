@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Trophy, RefreshCw, Search, Medal, Shield, Sparkles } from 'lucide-react';
 import { apiGetLeaderboard } from '../services/api';
 
@@ -126,7 +127,7 @@ function PodiumStep({ team, rank, orderClass }) {
   );
 }
 
-export default function LeaderboardPage({ user }) {
+export default function LeaderboardPage({ user, timerState }) {
   const [entries, setEntries] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
@@ -158,6 +159,35 @@ export default function LeaderboardPage({ user }) {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       
+      {/* Ceremony Active Grand Banner */}
+      {timerState?.ceremony_active && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-amber-950 shadow-lg shadow-amber-500/20 border-2 border-amber-300 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-amber-950 text-amber-300 flex items-center justify-center shrink-0 shadow-md">
+              <Trophy className="w-6 h-6 animate-bounce" />
+            </div>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-900 bg-amber-200/90 px-2.5 py-0.5 rounded-full border border-amber-300">
+                Official Ceremony Live
+              </span>
+              <h3 className="font-display font-black text-lg sm:text-xl text-amber-950 mt-1">
+                Grand Winner Ceremony is Now In Progress!
+              </h3>
+              <p className="text-xs text-amber-900 font-medium">
+                Experience the stepped Olympic podium with dramatic sequential reveals and champion coronations.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            to="/winners"
+            className="px-6 py-3 rounded-2xl bg-amber-950 hover:bg-black text-amber-300 font-black text-xs sm:text-sm shadow-md transition-all shrink-0 active:scale-95"
+          >
+            Enter Grand Ceremony 🏆
+          </Link>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

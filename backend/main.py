@@ -17,14 +17,20 @@ from sqlalchemy import desc, func, text
 
 from backend import database
 from backend.config import settings
+import difflib
 from backend.database import get_db, engine, SessionLocal
-from backend.models import Team, Progress, Level, PromptLog, Score, CompetitionState, AuditLog, ParticipantHint, Session as UserSession
+from backend.models import (
+    Team, Progress, Level, PromptLog, Score, CompetitionState, AuditLog,
+    ParticipantHint, Session as UserSession, AntiCheatIncident
+)
 from backend.schemas import (
     UserLogin, TokenResponse, UserResponse, ParticipantCreate, ParticipantUpdate, ParticipantResponse,
     LevelInfo, PromptSubmit, SubmissionResponse, SubmissionDetail, ParticipantStatsResponse, LevelProgressDetail,
     LeaderboardResponse, LeaderboardEntry, TimerResponse, CompetitionStateUpdate, AdminSubmissionLog, SystemHealthResponse,
     HintStatusResponse, HintRevealResponse, HintRevealRequest, PasswordVerify, AdminLevelInfo, LevelSecretUpdate,
-    ScoreBreakdown
+    ScoreBreakdown, AntiCheatIncidentResponse, AntiCheatActionRequest, ClientAntiCheatReport,
+    AnnouncementCreate, RoundCutoffExecuteRequest, RoundQualificationStatusResponse, RoundQualificationTeam,
+    WarRoomMatrixResponse, WarRoomTeamRow, WarRoomLevelStatus
 )
 from backend.auth import (
     hash_password, verify_password, create_access_token, get_current_user,
@@ -278,13 +284,21 @@ def _async_record_prompt_submission(
         logger.error("Async write-behind prompt log failed: %s", e)
 
 def timer_payload(state: CompetitionState) -> dict:
+    announcement = state.global_announcement
+    if isinstance(announcement, str):
+        try:
+            announcement = json.loads(announcement)
+        except Exception:
+            pass
     return {
         "status": state.status,
         "time_remaining_seconds": time_remaining_for(state),
         "start_time": state.start_time,
         "end_time": state.end_time,
         "current_round_id": state.current_round_id,
-        "emergency_disable_submissions": state.emergency_disable_submissions
+        "emergency_disable_submissions": state.emergency_disable_submissions,
+        "ceremony_active": bool(state.ceremony_active),
+        "global_announcement": announcement if isinstance(announcement, dict) else None
     }
 
 # Helper: Check competition timer and update state
@@ -403,6 +417,11 @@ def get_me(current_user: Team = Depends(get_current_user)):
         "id": current_user.id,
         "username": current_user.team_name,
         "role": role,
+        "is_disqualified": bool(current_user.is_disqualified),
+        "is_spectator": bool(current_user.is_spectator),
+        "eliminated_in_round": current_user.eliminated_in_round,
+        "warning_message": current_user.warning_message,
+        "cooldown_until": current_user.cooldown_until,
         "created_at": current_user.created_at
     }
 
@@ -436,13 +455,98 @@ async def run_submission(
     prompt_text: str,
     current_participant: Team,
     db: Session,
-    background_tasks: Optional[BackgroundTasks] = None
+    background_tasks: Optional[BackgroundTasks] = None,
+    honeypot_trap: Optional[str] = None,
+    client_telemetry: Optional[dict] = None
 ) -> dict:
     """
     Shared submission pipeline for both /api/arena/submit and
     /api/levels/{id}/submit. The target level is passed in explicitly so no
     endpoint has to temporarily rewrite progress.current_level.
     """
+    # 0. Anti-Cheat Status & Tournament Qualification Gates
+    if current_participant.is_disqualified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your team has been disqualified by competition arbiters for fair play violations."
+        )
+
+    if current_participant.cooldown_until and current_participant.cooldown_until > datetime.utcnow():
+        rem = max(1, int((current_participant.cooldown_until - datetime.utcnow()).total_seconds()))
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Your team has been placed on temporary cooldown by arbiters. {rem} second(s) remaining.",
+            headers={"Retry-After": str(rem)}
+        )
+
+    if current_participant.is_spectator:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Your team concluded the tournament in Round {current_participant.eliminated_in_round or 1} and is in spectator mode. Official scoring submissions are disabled."
+        )
+
+    # Honeypot Trap Detection (Catches automated scripts and browser extension autofillers)
+    if honeypot_trap and honeypot_trap.strip():
+        incident = AntiCheatIncident(
+            team_id=current_participant.id,
+            incident_type="HONEYPOT_TRIGGERED",
+            severity="CRITICAL",
+            details="Decoy honeypot form input was populated. Automated extension or script detected.",
+            prompt_snippet=prompt_text[:200],
+            status="FLAGGED"
+        )
+        db.add(incident)
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Automated extension or bot payload rejected by security layer."
+        )
+
+    # Keystroke & Typing Cadence Telemetry Analysis
+    if client_telemetry and isinstance(client_telemetry, dict):
+        typing_duration = client_telemetry.get("typing_duration_ms", 9999)
+        paste_detected = client_telemetry.get("paste_detected", False)
+        if typing_duration < 50 and len(prompt_text) > 80 and not paste_detected:
+            incident = AntiCheatIncident(
+                team_id=current_participant.id,
+                incident_type="BOT_CADENCE_ANOMALY",
+                severity="MEDIUM",
+                details=f"Impossible typing cadence ({typing_duration}ms for {len(prompt_text)} chars without paste event).",
+                prompt_snippet=prompt_text[:200],
+                status="FLAGGED"
+            )
+            db.add(incident)
+            db.commit()
+
+    # Cross-Team Collusion / Similarity Detection
+    if len(prompt_text.strip()) >= 50:
+        other_logs = (
+            db.query(PromptLog)
+            .filter(PromptLog.level == level.level_id, PromptLog.team_id != current_participant.id)
+            .order_by(desc(PromptLog.created_at))
+            .limit(20)
+            .all()
+        )
+        clean_p = prompt_text.strip().lower()
+        for o in other_logs:
+            o_clean = o.prompt.strip().lower()
+            if len(o_clean) >= 40:
+                sim = difflib.SequenceMatcher(None, clean_p, o_clean).ratio()
+                if sim >= 0.88:
+                    other_team = db.query(Team).filter(Team.id == o.team_id).first()
+                    ot_name = other_team.team_name if other_team else "Unknown"
+                    incident = AntiCheatIncident(
+                        team_id=current_participant.id,
+                        incident_type="CROSS_TEAM_SIMILARITY",
+                        severity="HIGH",
+                        details=f"High payload similarity ({int(sim * 100)}%) with team '{ot_name}' on Level {level.level_id}.",
+                        prompt_snippet=prompt_text[:200],
+                        status="FLAGGED"
+                    )
+                    db.add(incident)
+                    db.commit()
+                    break
+
     # 1. Verify competition state
     state = check_competition_timer(db)
     if state.emergency_disable_submissions:
@@ -678,7 +782,15 @@ async def submit_prompt(
             detail="Current level config not found or disabled."
         )
 
-    return await run_submission(level, submission.prompt, current_participant, db, background_tasks)
+    return await run_submission(
+        level,
+        submission.prompt,
+        current_participant,
+        db,
+        background_tasks,
+        honeypot_trap=submission.honeypot_trap,
+        client_telemetry=submission.client_telemetry
+    )
 
 @app.get("/api/arena/history", response_model=List[SubmissionDetail])
 def get_submission_history(
@@ -1073,6 +1185,11 @@ def admin_list_participants(
             team_name=p.team.team_name,
             current_level_id=p.current_level,
             total_score=p.total_score,
+            is_disqualified=bool(p.team.is_disqualified),
+            is_spectator=bool(p.team.is_spectator),
+            eliminated_in_round=p.team.eliminated_in_round,
+            warning_message=p.team.warning_message,
+            cooldown_until=p.team.cooldown_until,
             last_login_at=p.updated_at,
             created_at=p.team.created_at
         ) for p in progress_records if p.team.team_name != "admin"
@@ -1165,6 +1282,11 @@ def admin_update_participant(
         team_name=team.team_name,
         current_level_id=team.progress.current_level,
         total_score=team.progress.total_score,
+        is_disqualified=bool(team.is_disqualified),
+        is_spectator=bool(team.is_spectator),
+        eliminated_in_round=team.eliminated_in_round,
+        warning_message=team.warning_message,
+        cooldown_until=team.cooldown_until,
         last_login_at=team.progress.updated_at,
         created_at=team.created_at
     )
@@ -1421,12 +1543,445 @@ def admin_update_competition_state(
     if update_data.emergency_disable_submissions is not None:
         state.emergency_disable_submissions = update_data.emergency_disable_submissions
 
+    if update_data.ceremony_active is not None:
+        state.ceremony_active = update_data.ceremony_active
+
     db.commit()
     db.refresh(state)
 
     log_audit(db, current_admin.id, "COMPETITION_STATE_CHANGE", f"Changed status to {state.status}", request)
 
     return timer_payload(state)
+
+# ==============================================================================
+# SECTION: CEREMONY MODE & WINNER REVEAL
+# ==============================================================================
+
+@app.post("/api/admin/ceremony/toggle", response_model=TimerResponse)
+def admin_toggle_ceremony(
+    request: Request,
+    current_admin: Team = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    state = db.query(CompetitionState).first()
+    if not state:
+        state = CompetitionState()
+        db.add(state)
+        db.commit()
+    state.ceremony_active = not bool(state.ceremony_active)
+    db.commit()
+    db.refresh(state)
+    log_audit(db, current_admin.id, "CEREMONY_TOGGLE", f"Ceremony active set to {state.ceremony_active}", request)
+    return timer_payload(state)
+
+# ==============================================================================
+# SECTION: GLOBAL ANNOUNCEMENT TICKER
+# ==============================================================================
+
+@app.post("/api/admin/announcements", response_model=TimerResponse)
+def admin_broadcast_announcement(
+    data: AnnouncementCreate,
+    request: Request,
+    current_admin: Team = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    state = db.query(CompetitionState).first()
+    if not state:
+        state = CompetitionState()
+        db.add(state)
+        db.commit()
+    announcement_obj = {
+        "id": f"ann-{int(time.time())}",
+        "message": data.message,
+        "severity": data.severity,
+        "created_at": datetime.utcnow().isoformat()
+    }
+    state.global_announcement = announcement_obj
+    db.commit()
+    db.refresh(state)
+    log_audit(db, current_admin.id, "BROADCAST_ANNOUNCEMENT", f"Broadcasted: {data.message[:50]}...", request)
+    return timer_payload(state)
+
+@app.delete("/api/admin/announcements", response_model=TimerResponse)
+def admin_clear_announcement(
+    request: Request,
+    current_admin: Team = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    state = db.query(CompetitionState).first()
+    if not state:
+        state = CompetitionState()
+        db.add(state)
+        db.commit()
+    state.global_announcement = None
+    db.commit()
+    db.refresh(state)
+    log_audit(db, current_admin.id, "CLEAR_ANNOUNCEMENT", "Cleared broadcast announcement", request)
+    return timer_payload(state)
+
+# ==============================================================================
+# SECTION: ROUND QUALIFICATION & ELIMINATION MANAGER
+# ==============================================================================
+
+def _parse_json_field(val):
+    if val is None:
+        return {}
+    if isinstance(val, dict):
+        return val
+    if isinstance(val, str):
+        try:
+            return json.loads(val)
+        except Exception:
+            return {}
+    return {}
+
+@app.get("/api/admin/rounds/qualification-status", response_model=RoundQualificationStatusResponse)
+def admin_get_qualification_status(
+    current_admin: Team = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    state = db.query(CompetitionState).first()
+    curr_round = state.current_round_id if state else 1
+    # Round 1 cutoff is top 10; Round 2 cutoff is top 5
+    cutoff_count = 10 if curr_round == 1 else (5 if curr_round == 2 else 5)
+
+    # Sort teams by total_score desc, then by progress.updated_at asc (faster solve time)
+    teams = (
+        db.query(Team)
+        .filter(Team.team_name != "admin")
+        .join(Team.progress)
+        .order_by(desc(Progress.total_score), Progress.updated_at.asc())
+        .all()
+    )
+
+    cutoffs_dict = _parse_json_field(state.round_cutoffs if state else None)
+    cutoff_executed = bool(cutoffs_dict.get(f"round_{curr_round}_executed", False))
+
+    team_rows = []
+    for idx, t in enumerate(teams):
+        rank = idx + 1
+        advancing = rank <= cutoff_count and not t.is_disqualified
+        team_rows.append(RoundQualificationTeam(
+            team_id=str(t.id),
+            team_name=t.team_name,
+            rank=rank,
+            total_score=t.progress.total_score if t.progress else 0,
+            levels_solved=len(t.progress.completed_levels or []) if t.progress else 0,
+            advancing=advancing,
+            is_spectator=bool(t.is_spectator),
+            is_disqualified=bool(t.is_disqualified)
+        ))
+
+    return RoundQualificationStatusResponse(
+        current_round=curr_round,
+        advancing_cutoff=cutoff_count,
+        cutoff_executed=cutoff_executed,
+        teams=team_rows
+    )
+
+@app.post("/api/admin/rounds/execute-cutoff", response_model=RoundQualificationStatusResponse)
+def admin_execute_round_cutoff(
+    data: RoundCutoffExecuteRequest,
+    request: Request,
+    current_admin: Team = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    state = db.query(CompetitionState).first()
+    if not state:
+        state = CompetitionState()
+        db.add(state)
+        db.commit()
+
+    target_round = data.target_round
+    cutoff_count = 10 if target_round == 1 else 5
+
+    teams = (
+        db.query(Team)
+        .filter(Team.team_name != "admin")
+        .join(Team.progress)
+        .order_by(desc(Progress.total_score), Progress.updated_at.asc())
+        .all()
+    )
+
+    cutoffs_dict = dict(_parse_json_field(state.round_cutoffs))
+    advancing_ids = []
+    eliminated_ids = []
+
+    for idx, t in enumerate(teams):
+        rank = idx + 1
+        if rank <= cutoff_count and not t.is_disqualified:
+            t.is_spectator = False
+            advancing_ids.append(str(t.id))
+        else:
+            t.is_spectator = True
+            t.eliminated_in_round = target_round
+            eliminated_ids.append(str(t.id))
+
+    cutoffs_dict[f"round_{target_round}_executed"] = True
+    cutoffs_dict[f"round_{target_round}_advancing"] = advancing_ids
+    cutoffs_dict[f"round_{target_round}_eliminated"] = eliminated_ids
+    state.round_cutoffs = cutoffs_dict
+
+    # Auto-create announcement of cutoff
+    state.global_announcement = {
+        "id": f"cutoff-ann-{int(time.time())}",
+        "message": f"🏆 Round {target_round} Qualification Cutoff Executed! Top {cutoff_count} teams advance.",
+        "severity": "warning",
+        "created_at": datetime.utcnow().isoformat()
+    }
+
+    db.commit()
+    db.refresh(state)
+    log_audit(db, current_admin.id, "EXECUTE_ROUND_CUTOFF", f"Executed Round {target_round} cutoff (Top {cutoff_count} advanced, {len(eliminated_ids)} eliminated)", request)
+
+    # Return status reflecting target_round
+    res = admin_get_qualification_status(current_admin, db)
+    res.cutoff_executed = True
+    return res
+
+@app.post("/api/admin/teams/{team_id}/spectator-toggle")
+def admin_toggle_team_spectator(
+    team_id: str,
+    request: Request,
+    current_admin: Team = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    team.is_spectator = not bool(team.is_spectator)
+    if not team.is_spectator:
+        team.eliminated_in_round = None
+    db.commit()
+    log_audit(db, current_admin.id, "TOGGLE_SPECTATOR", f"Toggled spectator to {team.is_spectator} for {team.team_name}", request)
+    return {"team_id": str(team.id), "team_name": team.team_name, "is_spectator": team.is_spectator}
+
+# ==============================================================================
+# SECTION: ANTI-CHEAT RADAR & FAIR PLAY
+# ==============================================================================
+
+@app.get("/api/admin/anticheat/incidents", response_model=List[AntiCheatIncidentResponse])
+def admin_get_anticheat_incidents(
+    limit: int = 200,
+    current_admin: Team = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    incidents = (
+        db.query(AntiCheatIncident)
+        .options(joinedload(AntiCheatIncident.team))
+        .order_by(desc(AntiCheatIncident.created_at))
+        .limit(limit)
+        .all()
+    )
+    return [
+        AntiCheatIncidentResponse(
+            id=i.id,
+            team_id=str(i.team_id),
+            team_name=i.team.team_name if i.team else "Unknown",
+            incident_type=i.incident_type,
+            severity=i.severity,
+            details=i.details,
+            prompt_snippet=i.prompt_snippet,
+            status=i.status,
+            created_at=i.created_at
+        )
+        for i in incidents
+    ]
+
+@app.post("/api/admin/anticheat/action")
+def admin_execute_anticheat_action(
+    data: AntiCheatActionRequest,
+    request: Request,
+    current_admin: Team = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    team = db.query(Team).filter(Team.id == data.team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    action = data.action.lower()
+    now = datetime.utcnow()
+
+    if action == "warn":
+        msg = data.message or "Warning from Competition Arbiters: Suspicious automation or fair play violation detected. Continued attempts may result in disqualification."
+        team.warning_message = msg
+        if data.incident_id:
+            inc = db.query(AntiCheatIncident).filter(AntiCheatIncident.id == data.incident_id).first()
+            if inc:
+                inc.status = "WARNED"
+        db.commit()
+        log_audit(db, current_admin.id, "ANTICHEAT_WARN", f"Issued warning to team {team.team_name}: {msg}", request)
+        return {"status": "success", "action": "warn", "message": msg, "team_name": team.team_name}
+
+    elif action == "cooldown_60":
+        team.cooldown_until = now + timedelta(seconds=60)
+        if data.incident_id:
+            inc = db.query(AntiCheatIncident).filter(AntiCheatIncident.id == data.incident_id).first()
+            if inc:
+                inc.status = "PENALIZED"
+        db.commit()
+        log_audit(db, current_admin.id, "ANTICHEAT_COOLDOWN", f"Imposed 60s cooldown on team {team.team_name}", request)
+        return {"status": "success", "action": "cooldown_60", "cooldown_until": team.cooldown_until.isoformat(), "team_name": team.team_name}
+
+    elif action == "cooldown_300":
+        team.cooldown_until = now + timedelta(seconds=300)
+        if data.incident_id:
+            inc = db.query(AntiCheatIncident).filter(AntiCheatIncident.id == data.incident_id).first()
+            if inc:
+                inc.status = "PENALIZED"
+        db.commit()
+        log_audit(db, current_admin.id, "ANTICHEAT_COOLDOWN", f"Imposed 300s cooldown on team {team.team_name}", request)
+        return {"status": "success", "action": "cooldown_300", "cooldown_until": team.cooldown_until.isoformat(), "team_name": team.team_name}
+
+    elif action == "disqualify":
+        team.is_disqualified = True
+        team.warning_message = "Your team has been DISQUALIFIED by competition arbiters for fair play violations."
+        if data.incident_id:
+            inc = db.query(AntiCheatIncident).filter(AntiCheatIncident.id == data.incident_id).first()
+            if inc:
+                inc.status = "PENALIZED"
+        db.commit()
+        log_audit(db, current_admin.id, "ANTICHEAT_DISQUALIFY", f"Disqualified team {team.team_name}", request)
+        return {"status": "success", "action": "disqualify", "team_name": team.team_name}
+
+    elif action == "pardon":
+        team.is_disqualified = False
+        team.cooldown_until = None
+        team.warning_message = None
+        if data.incident_id:
+            inc = db.query(AntiCheatIncident).filter(AntiCheatIncident.id == data.incident_id).first()
+            if inc:
+                inc.status = "PARDONED"
+        db.commit()
+        log_audit(db, current_admin.id, "ANTICHEAT_PARDON", f"Pardoned team {team.team_name}", request)
+        return {"status": "success", "action": "pardon", "team_name": team.team_name}
+
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown action: {action}")
+
+@app.post("/api/anticheat/acknowledge-warning")
+def acknowledge_warning(
+    current_participant: Team = Depends(get_current_participant),
+    db: Session = Depends(get_db)
+):
+    current_participant.warning_message = None
+    db.commit()
+    return {"detail": "Warning acknowledged"}
+
+@app.post("/api/anticheat/report")
+def report_client_anomaly(
+    data: ClientAntiCheatReport,
+    current_participant: Team = Depends(get_current_participant),
+    db: Session = Depends(get_db)
+):
+    incident = AntiCheatIncident(
+        team_id=current_participant.id,
+        incident_type="SUSPECTED_EXTENSION",
+        severity="MEDIUM",
+        details=f"Client integrity anomaly reported: {data.anomaly_type} - {data.details}",
+        prompt_snippet=None,
+        status="FLAGGED"
+    )
+    db.add(incident)
+    db.commit()
+    return {"detail": "Incident recorded"}
+
+# ==============================================================================
+# SECTION: WAR ROOM ATTACK MATRIX
+# ==============================================================================
+
+@app.get("/api/admin/war-room/matrix", response_model=WarRoomMatrixResponse)
+def admin_get_war_room_matrix(
+    current_admin: Team = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    teams = (
+        db.query(Team)
+        .filter(Team.team_name != "admin")
+        .join(Team.progress)
+        .order_by(desc(Progress.total_score), Progress.updated_at.asc())
+        .all()
+    )
+
+    levels = db.query(Level).order_by(Level.level_id.asc()).all()
+
+    # First blood calculation (earliest solve per level)
+    successful_logs = (
+        db.query(PromptLog.level, PromptLog.team_id, PromptLog.created_at)
+        .filter(PromptLog.success == True)
+        .order_by(PromptLog.created_at.asc())
+        .all()
+    )
+    first_blood_map = {}
+    for log in successful_logs:
+        if log.level not in first_blood_map:
+            first_blood_map[log.level] = log.team_id
+    first_blood_owners = {}
+    team_cache = {t.id: t.team_name for t in teams}
+    for lvl_id, t_id in first_blood_map.items():
+        first_blood_owners[lvl_id] = team_cache.get(t_id, "Unknown")
+
+    total_breaches = 0
+    level_attempts_counter = {l.level_id: 0 for l in levels}
+    level_solves_counter = {l.level_id: 0 for l in levels}
+
+    team_rows = []
+    for t in teams:
+        p = t.progress
+        compl = set(p.completed_levels or [])
+        att_dict = p.attempts or {}
+        level_statuses = []
+
+        for l in levels:
+            lid = l.level_id
+            attempts = att_dict.get(str(lid), 0)
+            is_solved = lid in compl
+            is_fb = (first_blood_map.get(lid) == t.id)
+
+            level_attempts_counter[lid] += attempts
+            if is_solved:
+                total_breaches += 1
+                level_solves_counter[lid] += 1
+                status_str = "solved"
+            elif attempts > 0:
+                status_str = "attempting"
+            else:
+                status_str = "unattempted"
+
+            level_statuses.append(WarRoomLevelStatus(
+                level_id=lid,
+                round_id=l.round_id,
+                status=status_str,
+                attempts=attempts,
+                score_earned=l.base_score if is_solved else 0,
+                first_blood=is_fb
+            ))
+
+        team_rows.append(WarRoomTeamRow(
+            team_id=str(t.id),
+            team_name=t.team_name,
+            total_score=p.total_score,
+            levels_solved=len(compl),
+            is_spectator=bool(t.is_spectator),
+            is_disqualified=bool(t.is_disqualified),
+            levels=level_statuses
+        ))
+
+    hardest_lvl = None
+    max_difficulty = -1.0
+    for lid, att_count in level_attempts_counter.items():
+        solves = level_solves_counter.get(lid, 0)
+        diff_score = (att_count + 1) / (solves + 1)
+        if diff_score > max_difficulty:
+            max_difficulty = diff_score
+            hardest_lvl = lid
+
+    return WarRoomMatrixResponse(
+        teams=team_rows,
+        total_breaches=total_breaches,
+        first_blood_owners=first_blood_owners,
+        hardest_level=hardest_lvl
+    )
 
 @app.get("/api/admin/logs/export")
 def admin_export_logs(
@@ -1593,7 +2148,15 @@ async def submit_prompt_for_level(
     # temporarily overwrote progress.current_level, which leaked the wrong level
     # to any concurrent request and got persisted whenever the inner handler
     # committed mid-flight.
-    return await run_submission(level, submission.prompt, current_participant, db, background_tasks)
+    return await run_submission(
+        level,
+        submission.prompt,
+        current_participant,
+        db,
+        background_tasks,
+        honeypot_trap=submission.honeypot_trap,
+        client_telemetry=submission.client_telemetry
+    )
 
 # POST /api/levels/{level_id}/verify -> verify extracted password and complete level
 @app.post("/api/levels/{level_id}/verify", response_model=SubmissionResponse)
