@@ -82,9 +82,6 @@ export default function LevelsPage({ user }) {
           <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-slate-900 mt-2">
             12 Adversarial Challenge Levels
           </h1>
-          <p className="text-sm text-slate-500 font-medium">
-            12 Live challenge levels loaded directly from Supabase.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">
