@@ -62,6 +62,7 @@ import {
   apiExecuteAntiCheatAction,
   apiGetWarRoomMatrix,
 } from '../services/api';
+import { formatIST, formatISTTime } from '../utils/dateUtils';
 
 export default function AdminDashboardPage({ timerState, onStateUpdated }) {
   const [activeTab, setActiveTab] = useState('stage'); // 'stage' | 'teams' | 'secrets' | 'logs'
@@ -870,9 +871,9 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-slate-100 pb-2">
-                  <span className="text-slate-500 font-semibold">Timestamp:</span>
+                  <span className="text-slate-500 font-semibold">Timestamp (IST):</span>
                   <span className="font-mono text-slate-700">
-                    {new Date(incidentDetailModal.created_at).toLocaleString()}
+                    {formatIST(incidentDetailModal.created_at)}
                   </span>
                 </div>
                 <div>
@@ -2090,8 +2091,8 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                               </span>
                             )}
 
-                            <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap">
-                              {sub.created_at ? new Date(sub.created_at).toLocaleString() : ''}
+                            <span className="text-[11px] font-mono text-slate-500 whitespace-nowrap bg-slate-100/90 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                              {sub.created_at ? formatIST(sub.created_at) : ''}
                             </span>
                           </div>
                         </div>
@@ -2310,8 +2311,8 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                             }`}>
                               {inc.severity}
                             </span>
-                            <span className="text-[11px] font-mono text-slate-400">
-                              {new Date(inc.created_at).toLocaleTimeString()}
+                            <span className="text-[11px] font-mono text-slate-500 whitespace-nowrap bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                              {formatISTTime(inc.created_at)}
                             </span>
                           </div>
 

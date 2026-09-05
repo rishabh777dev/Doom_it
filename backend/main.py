@@ -4,7 +4,8 @@ import json
 import logging
 import psutil
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from io import StringIO
 from typing import List, Dict, Optional
 from fastapi import FastAPI, Depends, HTTPException, status, Response, Request, BackgroundTasks
@@ -1656,7 +1657,7 @@ def admin_broadcast_announcement(
         "id": f"ann-{int(time.time())}",
         "message": data.message,
         "severity": data.severity,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     state.global_announcement = announcement_obj
     db.commit()
@@ -1789,7 +1790,7 @@ def admin_execute_round_cutoff(
         "id": f"cutoff-ann-{int(time.time())}",
         "message": f"🏆 Round {target_round} Qualification Cutoff Executed! Top {cutoff_count} teams advance.",
         "severity": "warning",
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
 
     db.commit()
@@ -2109,7 +2110,11 @@ def admin_export_logs(
             "attempt_number": attempt_number,
             "latency_ms": log.latency_ms or 0,
             "model": log.provider or "unknown",
-            "timestamp": log.created_at.isoformat()
+            "timestamp": (
+                log.created_at.replace(tzinfo=timezone.utc)
+                if log.created_at.tzinfo is None
+                else log.created_at
+            ).astimezone(ZoneInfo("Asia/Kolkata")).strftime("%d %b %Y, %I:%M:%S %p IST")
         }
 
     rows = [build_row(log) for log in logs]
@@ -2127,7 +2132,7 @@ def admin_export_logs(
     writer.writerow([
         "Submission ID", "Username", "Team Name", "Level ID", "Round",
         "Prompt", "Model Response", "Success", "Score Awarded",
-        "Attempt Number", "Latency (ms)", "Model", "Timestamp"
+        "Attempt Number", "Latency (ms)", "Model", "Timestamp (IST)"
     ])
     for row in rows:
         writer.writerow(list(row.values()))

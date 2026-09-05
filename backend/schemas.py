@@ -1,7 +1,24 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PlainSerializer
 from typing import List, Optional, Union, Dict
-from datetime import datetime
+from datetime import datetime, timezone
+from typing_extensions import Annotated
 import uuid
+
+def serialize_datetime_utc(dt: Optional[datetime]) -> Optional[str]:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
+
+UTCDateTime = Annotated[
+    datetime,
+    PlainSerializer(
+        serialize_datetime_utc,
+        return_type=Optional[str],
+        when_used='json'
+    )
+]
 
 # Auth Schemas
 class UserLogin(BaseModel):
@@ -22,8 +39,8 @@ class UserResponse(BaseModel):
     is_spectator: bool = False
     eliminated_in_round: Optional[int] = None
     warning_message: Optional[str] = None
-    cooldown_until: Optional[datetime] = None
-    created_at: datetime
+    cooldown_until: Optional[UTCDateTime] = None
+    created_at: UTCDateTime
 
     class Config:
         from_attributes = True
@@ -49,9 +66,9 @@ class ParticipantResponse(BaseModel):
     is_spectator: bool = False
     eliminated_in_round: Optional[int] = None
     warning_message: Optional[str] = None
-    cooldown_until: Optional[datetime] = None
-    last_login_at: Optional[datetime] = None
-    created_at: datetime
+    cooldown_until: Optional[UTCDateTime] = None
+    last_login_at: Optional[UTCDateTime] = None
+    created_at: UTCDateTime
 
     class Config:
         from_attributes = True
@@ -144,7 +161,7 @@ class SubmissionDetail(BaseModel):
     attempt_number: int
     latency_ms: int
     model_name: str
-    created_at: datetime
+    created_at: UTCDateTime
 
     class Config:
         from_attributes = True
@@ -187,8 +204,8 @@ class LeaderboardResponse(BaseModel):
 class TimerResponse(BaseModel):
     status: str  # 'not_started', 'live', 'paused', 'ended'
     time_remaining_seconds: int
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: Optional[UTCDateTime] = None
+    end_time: Optional[UTCDateTime] = None
     current_round_id: int
     emergency_disable_submissions: bool
     ceremony_active: bool = False
@@ -216,7 +233,7 @@ class AdminSubmissionLog(BaseModel):
     attempt_number: int
     latency_ms: int
     model_name: str
-    created_at: datetime
+    created_at: UTCDateTime
 
     class Config:
         from_attributes = True
@@ -259,7 +276,7 @@ class AntiCheatIncidentResponse(BaseModel):
     details: str
     prompt_snippet: Optional[str] = None
     status: str
-    created_at: datetime
+    created_at: UTCDateTime
 
     class Config:
         from_attributes = True
@@ -308,7 +325,7 @@ class WarRoomLevelStatus(BaseModel):
     score_earned: int = 0
     first_blood: bool = False
     solved: bool = False
-    solved_at: Optional[datetime] = None
+    solved_at: Optional[UTCDateTime] = None
 
 class WarRoomTeamRow(BaseModel):
     team_id: Union[int, uuid.UUID, str]

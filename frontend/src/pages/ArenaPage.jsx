@@ -36,6 +36,7 @@ import {
   apiGetSubmissionHistory,
 } from '../services/api';
 import { triggerVictoryConfetti, playSound } from '../utils/effects';
+import { formatISTTime } from '../utils/dateUtils';
 import VictoryModal from '../components/VictoryModal';
 
 export default function ArenaPage({ user }) {
@@ -172,13 +173,13 @@ export default function ArenaPage({ user }) {
           id: `u-${h.id || idx}`,
           role: 'user',
           content: h.prompt,
-          timestamp: h.created_at ? new Date(h.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          timestamp: h.created_at ? formatISTTime(h.created_at, { showSeconds: false, hideSuffix: true }) : '',
         });
         chatList.push({
           id: `a-${h.id || idx}`,
           role: 'assistant',
           content: h.response,
-          timestamp: h.created_at ? new Date(h.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          timestamp: h.created_at ? formatISTTime(h.created_at, { showSeconds: false, hideSuffix: true }) : '',
           latencyMs: h.latency_ms,
           attemptNumber: h.attempt_number,
         });
@@ -214,7 +215,7 @@ export default function ArenaPage({ user }) {
       id: `user-${Date.now()}`,
       role: 'user',
       content: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: formatISTTime(new Date(), { showSeconds: false, hideSuffix: true }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -242,7 +243,7 @@ export default function ArenaPage({ user }) {
         id: `bot-${Date.now()}`,
         role: 'assistant',
         content: res.llm_response,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: formatISTTime(new Date(), { showSeconds: false, hideSuffix: true }),
         latencyMs: res.latency_ms,
         attemptNumber: res.attempts_used,
       };
@@ -271,7 +272,7 @@ export default function ArenaPage({ user }) {
         id: `err-${Date.now()}`,
         role: 'assistant',
         content: `⚠️ Transmission Error: ${err.message || 'Connection interrupted. Please retry.'}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: formatISTTime(new Date(), { showSeconds: false, hideSuffix: true }),
         isError: true,
         failedPromptText: text,
       };
