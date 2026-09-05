@@ -22,7 +22,11 @@ export default function LevelsPage({ user }) {
       ]);
       setStats(s);
       setCurrentLevel(curLvl);
-      setLevels(Array.isArray(allLvls) ? allLvls : []);
+      setLevels(
+        Array.isArray(allLvls)
+          ? allLvls.filter((l) => l.level_id <= 12).sort((a, b) => a.level_id - b.level_id)
+          : []
+      );
     } catch (err) {
       console.error(err);
     } finally {

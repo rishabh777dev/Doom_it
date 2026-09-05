@@ -958,7 +958,7 @@ def get_participant_stats(
     current_participant: Team = Depends(get_current_participant),
     db: Session = Depends(get_db)
 ):
-    levels = db.query(Level).filter(Level.enabled == True).all()
+    levels = db.query(Level).filter(Level.enabled == True).order_by(Level.level_id.asc()).all()
 
     level_details: List[LevelProgressDetail] = []
     total_attempts = 0
@@ -1141,7 +1141,7 @@ def admin_list_levels(
     current_admin: Team = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    levels = db.query(Level).all()
+    levels = db.query(Level).order_by(Level.level_id.asc()).all()
     return [
         {
             "level_id": l.level_id,
@@ -1464,7 +1464,7 @@ def admin_bulk_toggle_hints(
     current_admin: Team = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    levels = db.query(Level).all()
+    levels = db.query(Level).order_by(Level.level_id.asc()).all()
     for lvl in levels:
         lvl.hint_released = released
     db.commit()
@@ -2155,7 +2155,7 @@ def get_all_levels(
     current_participant: Team = Depends(get_current_participant),
     db: Session = Depends(get_db)
 ):
-    levels = db.query(Level).filter(Level.enabled == True).all()
+    levels = db.query(Level).filter(Level.enabled == True).order_by(Level.level_id.asc()).all()
     unlocked_levels = current_participant.progress.unlocked_levels or [1]
 
     # One query for all revealed hints instead of one per level.

@@ -162,7 +162,10 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
         apiGetWarRoomMatrix().catch(() => null),
       ]);
       setParticipants(parts);
-      setLevels(lvls);
+      const sortedLevels = (Array.isArray(lvls) ? lvls : [])
+        .filter((l) => l.level_id <= 12)
+        .sort((a, b) => a.level_id - b.level_id);
+      setLevels(sortedLevels);
       setSubmissions(subs);
       if (quals) setQualificationData(quals);
       if (incs) setAntiCheatIncidents(incs);
@@ -290,7 +293,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
       await apiBulkToggleHints(released);
       showToast('success', `All level hints have been ${released ? 'RELEASED' : 'LOCKED'}!`);
       const updated = await apiGetAdminLevels().catch(() => null);
-      if (updated) setLevels(updated);
+      if (updated) setLevels(updated.filter(l => l.level_id <= 12).sort((a, b) => a.level_id - b.level_id));
     } catch (err) {
       showToast('error', `Failed to update hints: ${err.message}`);
     } finally {
@@ -299,13 +302,13 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
   };
 
   const handleSingleHintToggle = async (levelId, released) => {
-    setLevels(prev => prev.map(l => l.level_id === levelId ? { ...l, hint_released: released } : l));
+    setLevels(prev => prev.map(l => l.level_id === levelId ? { ...l, hint_released: released } : l).sort((a, b) => a.level_id - b.level_id));
     showToast('info', `${released ? 'Releasing' : 'Locking'} hints for Level ${levelId}...`);
     try {
       await apiToggleHintRelease(levelId, released);
       showToast('success', `Level ${levelId} hints ${released ? 'released' : 'locked'}.`);
       const updated = await apiGetAdminLevels().catch(() => null);
-      if (updated) setLevels(updated);
+      if (updated) setLevels(updated.filter(l => l.level_id <= 12).sort((a, b) => a.level_id - b.level_id));
     } catch (err) {
       showToast('error', `Failed to toggle hint: ${err.message}`);
     }
@@ -609,7 +612,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
       await apiUpdateLevelSecret(selectedLevelId, payload);
       showToast('success', `Level ${selectedLevelId} updated live! Active in arena immediately.`);
       const updated = await apiGetAdminLevels().catch(() => null);
-      if (updated) setLevels(updated);
+      if (updated) setLevels(updated.filter(l => l.level_id <= 12).sort((a, b) => a.level_id - b.level_id));
     } catch (err) {
       setLevels(prevLevels);
       showToast('error', `Failed to update level: ${err.message}`);

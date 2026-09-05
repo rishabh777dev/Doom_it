@@ -124,7 +124,8 @@ export default function ArenaPage({ user }) {
       setActiveLevel(currLvl);
 
       const allLvls = await apiGetLevels().catch(() => []);
-      setAllLevels(allLvls);
+      const sortedLvls = (allLvls || []).filter((l) => l.level_id <= 12).sort((a, b) => a.level_id - b.level_id);
+      setAllLevels(sortedLvls);
 
       const activeId = targetId || selectedLevelId || currLvl.level_id;
       setSelectedLevelId(activeId);
