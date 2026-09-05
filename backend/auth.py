@@ -41,6 +41,9 @@ def get_token_from_cookie_or_header(request: Request) -> str:
         
     if not token:
         token = request.cookies.get("access_token")
+        
+    if not token:
+        token = request.query_params.get("token")
             
     if not token:
         raise HTTPException(

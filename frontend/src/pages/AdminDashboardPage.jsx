@@ -37,6 +37,7 @@ import {
   apiGetAdminLevels,
   apiUpdateLevelSecret,
   apiGetAdminSubmissions,
+  apiExportLogs,
 } from '../services/api';
 
 export default function AdminDashboardPage({ timerState, onStateUpdated }) {
@@ -83,6 +84,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
   // UI States
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState(null);
   const [toast, setToast] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
 
@@ -181,6 +183,19 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
     navigator.clipboard.writeText(text);
     setCopiedLogId(id);
     setTimeout(() => setCopiedLogId(null), 2000);
+  };
+
+  const handleExportLogs = async (fmt) => {
+    try {
+      setExportingFormat(fmt);
+      showToast('info', `Generating ${fmt.toUpperCase()} export...`);
+      await apiExportLogs(fmt);
+      showToast('success', `${fmt.toUpperCase()} submissions ledger downloaded.`);
+    } catch (err) {
+      showToast('error', `Failed to export ${fmt.toUpperCase()}: ${err.message}`);
+    } finally {
+      setExportingFormat(null);
+    }
   };
 
   // --------------------------------------------------------------------------
@@ -559,7 +574,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
           </div>
         )}
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           
           {/* Top Page Header (Flat, Clean, Fast) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
@@ -663,21 +678,24 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                   <span>Round & Stage Manager</span>
                 </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4 max-w-2xl">
+                  <div className="w-full sm:w-44">
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      Target Duration (Minutes)
+                      Target Duration
                     </label>
-                    <input
-                      type="number"
-                      value={durationMinutes}
-                      onChange={(e) => setDurationMinutes(Math.max(1, Number(e.target.value)))}
-                      className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-900 focus:bg-white"
-                      min="1"
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={durationMinutes}
+                        onChange={(e) => setDurationMinutes(Math.max(1, Number(e.target.value)))}
+                        className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-900 focus:bg-white"
+                        min="1"
+                      />
+                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400">min</span>
+                    </div>
                   </div>
 
-                  <div>
+                  <div className="flex-1">
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">
                       Active Round
                     </label>
@@ -693,88 +711,63 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="flex flex-wrap items-center gap-3 pt-2">
                   <button
                     onClick={() => handleStageAction('live')}
                     disabled={loading}
-                    className="py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="py-2.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                   >
-                    <Play className="w-4 h-4 fill-white" />
+                    <Play className="w-3.5 h-3.5 fill-white" />
                     <span>START / RESUME ARENA</span>
                   </button>
 
                   <button
                     onClick={() => handleStageAction('paused')}
                     disabled={loading}
-                    className="py-3 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="py-2.5 px-5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                   >
-                    <Pause className="w-4 h-4 fill-white" />
+                    <Pause className="w-3.5 h-3.5 fill-white" />
                     <span>PAUSE TIMER</span>
                   </button>
 
                   <button
                     onClick={() => handleStageAction('ended')}
                     disabled={loading}
-                    className="py-3 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="py-2.5 px-5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                   >
-                    <Square className="w-4 h-4 fill-white" />
+                    <Square className="w-3.5 h-3.5 fill-white" />
                     <span>END COMPETITION</span>
                   </button>
                 </div>
               </div>
 
               {/* Emergency Submissions Freeze */}
-              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-3">
-                <span className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
-                  <AlertOctagon className="w-5 h-5 text-rose-600" />
-                  <span>Submissions Freeze Controller</span>
-                </span>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Instantly halts prompt inputs across all contestant terminals. Use for announcements or breaks.
-                </p>
+              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
+                    <AlertOctagon className="w-5 h-5 text-rose-600" />
+                    <span>Submissions Freeze Controller</span>
+                  </span>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Instantly halts prompt inputs across all contestant terminals. Use for announcements or breaks.
+                  </p>
+                </div>
                 <button
                   onClick={handleToggleFreeze}
                   disabled={loading}
-                  className={`w-full py-3.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer ${
+                  className={`px-6 py-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shrink-0 shadow-md ${
                     timerState?.emergency_disable_submissions
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md'
-                      : 'bg-rose-600 hover:bg-rose-700 text-white shadow-md'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : 'bg-rose-600 hover:bg-rose-700 text-white'
                   }`}
                 >
                   <AlertOctagon className="w-4 h-4" />
                   <span>
                     {timerState?.emergency_disable_submissions
-                      ? 'RESUME ALL CONTESTANT SUBMISSIONS'
-                      : 'FREEZE ALL CONTESTANT SUBMISSIONS'}
+                      ? 'RESUME ALL SUBMISSIONS'
+                      : 'FREEZE ALL SUBMISSIONS'}
                   </span>
                 </button>
-              </div>
-
-              {/* Export Logs */}
-              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div>
-                  <strong className="text-sm text-slate-900 font-display font-bold">Submission Prompt Logs Export</strong>
-                  <p className="text-xs text-slate-500 mt-0.5">Download contestant prompts, model responses, and solve flags.</p>
-                </div>
-
-                <div className="flex gap-2.5">
-                  <a
-                    href="/api/admin/logs/export?format=csv"
-                    download
-                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold text-slate-800 flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>CSV</span>
-                  </a>
-                  <a
-                    href="/api/admin/logs/export?format=json"
-                    download
-                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold text-slate-800 flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>JSON</span>
-                  </a>
-                </div>
               </div>
 
             </div>
@@ -1119,7 +1112,38 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* CSV and JSON download buttons inside Submission Prompt Box */}
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                      <button
+                        onClick={() => handleExportLogs('csv')}
+                        disabled={exportingFormat !== null}
+                        className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                        title="Download Submissions CSV"
+                      >
+                        {exportingFormat === 'csv' ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-brand-blue" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5 text-brand-blue" />
+                        )}
+                        <span>CSV</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleExportLogs('json')}
+                        disabled={exportingFormat !== null}
+                        className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                        title="Download Submissions JSON"
+                      >
+                        {exportingFormat === 'json' ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5 text-purple-600" />
+                        )}
+                        <span>JSON</span>
+                      </button>
+                    </div>
+
                     <span className="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-mono text-xs font-bold shadow-sm">
                       Showing {filteredSubmissions.length} of {submissions.length} Total Logs
                     </span>

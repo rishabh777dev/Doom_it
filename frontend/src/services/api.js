@@ -258,3 +258,26 @@ export const apiUpdateCompetitionState = async (updateData) => {
   return handleResponse(res);
 };
 
+export const apiExportLogs = async (format = 'csv') => {
+  const token = getToken();
+  const headers = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const url = `${BASE_URL}/api/admin/logs/export?format=${format}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Export failed with status ${response.status}`);
+  }
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = `competition_submissions_export.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+};
+

@@ -10,6 +10,7 @@ import {
   apiGetAdminLevels,
   apiUpdateLevelSecret,
   apiGetAdminHealth,
+  apiExportLogs,
 } from '../services/api';
 
 export default function AdminModal({ isOpen, onClose, timerState, onStateUpdated }) {
@@ -307,22 +308,22 @@ export default function AdminModal({ isOpen, onClose, timerState, onStateUpdated
             <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs text-slate-600 font-semibold">
               <span>Export Submissions:</span>
               <div className="flex gap-2">
-                <a
-                  href="/api/admin/logs/export?format=csv"
-                  download
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center gap-1.5"
+                <button
+                  type="button"
+                  onClick={() => apiExportLogs('csv')}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="w-3.5 h-3.5 text-brand-blue" />
                   <span>Download CSV</span>
-                </a>
-                <a
-                  href="/api/admin/logs/export?format=json"
-                  download
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center gap-1.5"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => apiExportLogs('json')}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="w-3.5 h-3.5 text-purple-600" />
                   <span>Download JSON</span>
-                </a>
+                </button>
               </div>
             </div>
           </div>
