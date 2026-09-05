@@ -1203,6 +1203,9 @@ def admin_update_level_secret(
     if data.hint_text_2 is not None:
         lvl.hint_text_2 = data.hint_text_2
         changed_fields.append("hint_text_2")
+    if data.hint_released is not None:
+        lvl.hint_released = data.hint_released
+        changed_fields.append("hint_released")
 
     if not changed_fields:
         raise HTTPException(status_code=400, detail="No fields provided to update.")

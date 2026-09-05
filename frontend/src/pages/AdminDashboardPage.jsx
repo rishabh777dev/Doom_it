@@ -92,6 +92,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
   const [editSecret, setEditSecret] = useState('');
   const [editTargetPhrase, setEditTargetPhrase] = useState('');
   const [editHint, setEditHint] = useState('');
+  const [editHintReleased, setEditHintReleased] = useState(false);
 
   // Submission Prompt Logs filter state
   const [logTeamFilter, setLogTeamFilter] = useState('ALL');
@@ -221,6 +222,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
       setEditSecret(activeLevel.secret || '');
       setEditTargetPhrase(activeLevel.target_phrase || '');
       setEditHint(activeLevel.hint_text || '');
+      setEditHintReleased(Boolean(activeLevel.hint_released));
     }
   }, [activeLevel]);
 
@@ -562,6 +564,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
       secret: editSecret.trim(),
       target_phrase: editTargetPhrase.trim(),
       hint_text: editHint.trim(),
+      hint_released: editHintReleased,
     };
 
     // 1. OPTIMISTIC UPDATE: Update level in memory
@@ -1651,6 +1654,40 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                   placeholder="Optional hint for struggling contestants..."
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs text-slate-900 focus:bg-white"
                 />
+              </div>
+
+              {/* Arena Hint Release Toggle */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className={`w-4 h-4 ${editHintReleased ? 'text-amber-500' : 'text-slate-400'}`} />
+                    <span className="text-xs font-bold text-slate-800">
+                      Arena Hint Status:
+                    </span>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                      editHintReleased ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {editHintReleased ? 'Released to Contestants' : 'Locked by Organizers'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    {editHintReleased
+                      ? 'Contestants can view and unlock Tier 1 & Tier 2 hints in the Arena (with point penalties).'
+                      : 'Contestants will see "Intel locked by competition organizers for this phase."'}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setEditHintReleased(!editHintReleased)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto flex items-center gap-1.5 ${
+                    editHintReleased
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                  }`}
+                >
+                  {editHintReleased ? '🔒 Lock Hint' : '🔓 Release Hint to Arena'}
+                </button>
               </div>
 
               <button

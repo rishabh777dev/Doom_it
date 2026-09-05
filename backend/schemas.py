@@ -247,6 +247,7 @@ class LevelSecretUpdate(BaseModel):
     system_prompt: Optional[str] = Field(None, max_length=12000)
     hint_text: Optional[str] = Field(None, max_length=2000)
     hint_text_2: Optional[str] = Field(None, max_length=2000)
+    hint_released: Optional[bool] = None
 
 # Anti-Cheat & Fair Play Schemas
 class AntiCheatIncidentResponse(BaseModel):
