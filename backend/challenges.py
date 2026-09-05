@@ -1,6 +1,6 @@
-# challenges.py - Marvel Multiverse Challenge Configuration for Vakya-Bhed 2026
+# challenges.py - Marvel Multiverse Challenge Configuration for VakyaBhed 2026
 """
-Vakya-Bhed 2026 — Marvel Multiverse Challenge Configuration
+VakyaBhed 2026 — Marvel Multiverse Challenge Configuration
 
 DESIGN PHILOSOPHY:
     NO system prompt contains an explicit "if X, then reveal" backdoor.

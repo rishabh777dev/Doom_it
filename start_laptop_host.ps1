@@ -1,5 +1,5 @@
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "      VAKYA-BHED 2026 - LAPTOP HOSTING LAUNCHER         " -ForegroundColor Green
+Write-Host "      VAKYABHED 2026 - LAPTOP HOSTING LAUNCHER          " -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Cyan
 
 Write-Host "

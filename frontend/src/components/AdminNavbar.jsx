@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Settings, Shield, Clock, LogOut, ExternalLink } from 'lucide-react';
+import { Settings, Clock, LogOut, ExternalLink } from 'lucide-react';
 import { apiLogout } from '../services/api';
 
 export default function AdminNavbar({ timerState }) {
@@ -25,12 +25,14 @@ export default function AdminNavbar({ timerState }) {
         
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-brand-blue flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-            <Settings className="w-6 h-6 stroke-[2.5]" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="VakyaBhed Logo"
+            className="w-11 h-11 object-contain rounded-xl drop-shadow-sm"
+          />
           <div>
             <div className="font-display font-extrabold text-xl tracking-tight text-slate-900 flex items-center gap-2">
-              Vakya-Bhed <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">Admin Console</span>
+              VakyaBhed <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">Admin Console</span>
             </div>
             <p className="text-xs font-medium text-slate-500 -mt-0.5">Global Competition Orchestrator</p>
           </div>

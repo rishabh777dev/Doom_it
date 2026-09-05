@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Settings, Lock, User, AlertCircle, RefreshCw, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, AlertCircle, RefreshCw, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { apiLogin } from '../services/api';
 
 export default function AdminLoginPage() {
@@ -41,14 +41,16 @@ export default function AdminLoginPage() {
         
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center mx-auto shadow-md shadow-purple-600/25">
-            <Settings className="w-6 h-6 stroke-[2.5]" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="VakyaBhed Logo"
+            className="w-14 h-14 object-contain rounded-2xl mx-auto drop-shadow-sm"
+          />
           <h2 className="font-display font-extrabold text-2xl text-slate-900">
             Admin Console Sign In
           </h2>
           <p className="text-xs text-slate-500 font-medium">
-            Restricted orchestrator portal for Vakya-Bhed 2026.
+            Restricted orchestrator portal for VakyaBhed 2026.
           </p>
         </div>
 

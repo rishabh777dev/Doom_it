@@ -14,7 +14,7 @@ export default function RulesPage() {
           Competition Rules & Scoring Architecture
         </h1>
         <p className="text-sm text-slate-500 font-medium">
-          Comprehensive guide for contestants participating in Vakya-Bhed 2026.
+          Comprehensive guide for contestants participating in VakyaBhed 2026.
         </p>
       </div>
 

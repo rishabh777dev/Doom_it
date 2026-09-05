@@ -83,7 +83,7 @@ app.add_middleware(
 async def root_welcome():
     return {
         "status": "online",
-        "name": "Vakya-Bhed 2026 Competition Platform API",
+        "name": "VakyaBhed 2026 Competition Platform API",
         "health_checks": {
             "server": "/api/health",
             "database": "/api/health/database"
@@ -1834,7 +1834,7 @@ if os.path.exists(frontend_dir):
         if os.path.exists(index_file):
             return FileResponse(index_file)
         else:
-            return {"detail": "Vakya-Bhed 2026 platform backend running. Frontend assets compiling."}
+            return {"detail": "VakyaBhed 2026 platform backend running. Frontend assets compiling."}
 else:
     # No fallback root definition is required since the welcome root GET / is defined at the top.
     pass

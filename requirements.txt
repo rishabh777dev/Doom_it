@@ -1,4 +1,4 @@
-# Vakya-Bhed 2026 - Root Dependencies
+# VakyaBhed 2026 - Root Dependencies
 # Backend
 fastapi>=0.110.0
 uvicorn>=0.28.0

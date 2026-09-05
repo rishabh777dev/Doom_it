@@ -1,4 +1,4 @@
-# llm_router.py - Routing and priority abstraction for LLMs in Vakya-Bhed 2026
+# llm_router.py - Routing and priority abstraction for LLMs in VakyaBhed 2026
 
 import logging
 import time

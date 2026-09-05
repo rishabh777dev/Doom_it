@@ -45,7 +45,7 @@ export default function LeaderboardModal({ isOpen, onClose, currentUsername }) {
                 Hall of Fame & Scoreboard
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Live rankings of all competing teams in Vakya-Bhed 2026.
+                Live rankings of all competing teams in VakyaBhed 2026.
               </p>
             </div>
           </div>

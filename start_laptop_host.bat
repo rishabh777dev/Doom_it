@@ -1,15 +1,15 @@
 @echo off
-title Vakya-Bhed 2026 CTF Host
+title VakyaBhed 2026 CTF Host
 echo ========================================================
-echo       VAKYA-BHED 2026 - LAPTOP HOSTING LAUNCHER
+echo       VAKYABHED 2026 - LAPTOP HOSTING LAUNCHER
 echo ========================================================
 echo.
 
 echo [1/3] Starting FastAPI Backend on Port 8000...
-start "Vakya-Bhed Backend (FastAPI)" cmd /k "cd /d %~dp0 && .venv\Scripts\python.exe -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+start "VakyaBhed Backend (FastAPI)" cmd /k "cd /d %~dp0 && .venv\Scripts\python.exe -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
 
 echo [2/3] Starting React Frontend on Port 5173...
-start "Vakya-Bhed Frontend (React + Vite)" cmd /k "cd /d %~dp0\frontend && npm run dev"
+start "VakyaBhed Frontend (React + Vite)" cmd /k "cd /d %~dp0\frontend && npm run dev"
 
 timeout /t 4 >nul
 

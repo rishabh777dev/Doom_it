@@ -19,7 +19,7 @@ export default function HeroSection({ onGetStarted, onOpenRules }) {
                 Here <span className="inline-block bg-brand-blue text-white px-3.5 py-0.5 rounded-2xl shadow-sm">hackers</span> break awesome AI models
               </h1>
               <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal max-w-xl pt-2">
-                With Vakya-Bhed all prompt engineers and cybersecurity researchers can challenge big and small language models, leak classified tokens, and conquer 12 adversarial levels.
+                With VakyaBhed all prompt engineers and cybersecurity researchers can challenge big and small language models, leak classified tokens, and conquer 12 adversarial levels.
               </p>
             </div>
 

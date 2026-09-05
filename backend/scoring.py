@@ -1,4 +1,4 @@
-# scoring.py - Centralized scoring rules for Vakya-Bhed 2026
+# scoring.py - Centralized scoring rules for VakyaBhed 2026
 from typing import Union
 
 # Round-wise attempt penalties (deducted for each attempt beyond attempt 1):

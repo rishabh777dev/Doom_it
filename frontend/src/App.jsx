@@ -181,10 +181,12 @@ function AppContent() {
         <footer className="py-8 bg-white border-t border-slate-200/80 mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-500">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-brand-blue text-white flex items-center justify-center font-bold text-[10px]">
-                VB
-              </div>
-              <span>Vakya-Bhed 2026 | AI Safety & Adversarial CTF Arena</span>
+              <img
+                src="/logo.png"
+                alt="VakyaBhed Logo"
+                className="w-6 h-6 object-contain rounded-md drop-shadow-sm"
+              />
+              <span>VakyaBhed 2026 | AI Safety & Adversarial CTF Arena</span>
             </div>
 
             <div className="flex items-center gap-6">

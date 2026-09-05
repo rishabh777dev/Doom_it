@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Shield,
   Trophy,
   Clock,
   LogIn,
@@ -68,12 +67,14 @@ export default function Navbar({ user, timerState }) {
         
         {/* Brand Logo */}
         <Link to={homeLink} className="flex items-center gap-2.5 sm:gap-3 select-none group">
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-brand-blue flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform shrink-0">
-            <Shield className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="VakyaBhed Logo"
+            className="w-10 h-10 sm:w-11 sm:h-11 object-contain rounded-xl drop-shadow-sm group-hover:scale-105 transition-transform shrink-0"
+          />
           <div>
             <div className="font-display font-extrabold text-lg sm:text-xl tracking-tight text-slate-900 flex items-center gap-1.5">
-              Vakya-Bhed <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-brand-blue">2026</span>
+              VakyaBhed <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-brand-blue">2026</span>
             </div>
             <p className="text-[11px] font-medium text-slate-500 -mt-0.5 hidden xs:block">AI Safety & Adversarial CTF</p>
           </div>

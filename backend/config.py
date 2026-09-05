@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     )
 
     # Base Configuration
-    PROJECT_NAME: str = "Vakya-Bhed 2026 API"
+    PROJECT_NAME: str = "VakyaBhed 2026 API"
     DEV_MODE: bool = False  # True uses MockLLMProvider, False uses OllamaLLMProvider
 
     # Supabase Database Configuration

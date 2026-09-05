@@ -1,5 +1,5 @@
 -- ==============================================================================
--- VAKYA-BHED 2026 — SUPABASE POSTGRESQL SCHEMA DEFINITION
+-- VAKYABHED 2026 — SUPABASE POSTGRESQL SCHEMA DEFINITION
 -- Run this script in the Supabase SQL Editor to initialize the database.
 -- ==============================================================================
 

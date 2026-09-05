@@ -1,4 +1,4 @@
-# llm_provider.py - LLM provider abstractions for Vakya-Bhed 2026
+# llm_provider.py - LLM provider abstractions for VakyaBhed 2026
 """
 Providers receive a plain LevelContext snapshot instead of a live SQLAlchemy
 ``Level`` row. The queue workers run in a different asyncio task from the

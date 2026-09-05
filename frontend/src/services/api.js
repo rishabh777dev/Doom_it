@@ -1,4 +1,4 @@
-// api.js - Centralized API client for Vakya-Bhed 2026
+// api.js - Centralized API client for VakyaBhed 2026
 
 const BASE_URL = import.meta.env.DEV
   ? ''

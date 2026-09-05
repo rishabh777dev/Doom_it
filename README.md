@@ -1,4 +1,4 @@
-# Doom_it (Vakya-Bhed 2026 - LLM CTF Competition Platform)
+# Doom_it (VakyaBhed 2026 - LLM CTF Competition Platform)
 
 A full-stack LLM Capture-The-Flag (CTF) platform built for competitive prompt injection, jailbreaking, and defense challenges.
 

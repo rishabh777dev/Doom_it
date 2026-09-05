@@ -1450,7 +1450,7 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
       </div>
 
       <footer className="py-5 bg-white border-t border-slate-200 mt-12 text-center text-xs font-medium text-slate-400">
-        Vakya-Bhed 2026 Admin Console • Zero-Latency Streamlined Control
+        VakyaBhed 2026 Admin Console • Zero-Latency Streamlined Control
       </footer>
     </div>
   );

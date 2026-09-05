@@ -164,7 +164,7 @@ export default function AdminModal({ isOpen, onClose, timerState, onStateUpdated
                 Administrator Systems Control
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Global orchestrator controls for Vakya-Bhed 2026.
+                Global orchestrator controls for VakyaBhed 2026.
               </p>
             </div>
           </div>

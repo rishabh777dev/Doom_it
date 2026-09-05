@@ -19,7 +19,7 @@ export default function RulesModal({ isOpen, onClose }) {
                 Competition Rules & Guide
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Vakya-Bhed 2026 AI Safety & Adversarial CTF Arena.
+                VakyaBhed 2026 AI Safety & Adversarial CTF Arena.
               </p>
             </div>
           </div>
