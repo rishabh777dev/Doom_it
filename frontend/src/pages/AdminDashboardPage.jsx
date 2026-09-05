@@ -22,6 +22,8 @@ import {
   FileText,
   Save,
   Lock,
+  Unlock,
+  Lightbulb,
   Copy,
   Filter,
   ShieldAlert,
@@ -46,6 +48,8 @@ import {
   apiDeleteParticipant,
   apiGetAdminLevels,
   apiUpdateLevelSecret,
+  apiToggleHintRelease,
+  apiBulkToggleHints,
   apiGetAdminSubmissions,
   apiExportLogs,
   apiToggleCeremony,
@@ -277,6 +281,33 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
       showToast('error', err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBulkToggleHints = async (released) => {
+    setLoading(true);
+    try {
+      await apiBulkToggleHints(released);
+      showToast('success', `All level hints have been ${released ? 'RELEASED' : 'LOCKED'}!`);
+      const updated = await apiGetAdminLevels().catch(() => null);
+      if (updated) setLevels(updated);
+    } catch (err) {
+      showToast('error', `Failed to update hints: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSingleHintToggle = async (levelId, released) => {
+    setLevels(prev => prev.map(l => l.level_id === levelId ? { ...l, hint_released: released } : l));
+    showToast('info', `${released ? 'Releasing' : 'Locking'} hints for Level ${levelId}...`);
+    try {
+      await apiToggleHintRelease(levelId, released);
+      showToast('success', `Level ${levelId} hints ${released ? 'released' : 'locked'}.`);
+      const updated = await apiGetAdminLevels().catch(() => null);
+      if (updated) setLevels(updated);
+    } catch (err) {
+      showToast('error', `Failed to toggle hint: ${err.message}`);
     }
   };
 
@@ -1087,6 +1118,82 @@ export default function AdminDashboardPage({ timerState, onStateUpdated }) {
                       : 'FREEZE ALL SUBMISSIONS'}
                   </span>
                 </button>
+              </div>
+
+              {/* Tactical Hints & Intel Release Controller */}
+              <div className="bg-white rounded-3xl border-2 border-slate-900 p-6 shadow-card space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700">
+                        <Lightbulb className="w-4 h-4" />
+                      </div>
+                      <span className="font-display font-bold text-base text-slate-900">
+                        Tactical Hints & Intel Release Controller
+                      </span>
+                      {levels.some(l => l.hint_released) ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          ACTIVE ({levels.filter(l => l.hint_released).length}/{levels.length} RELEASED)
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-300">
+                          ALL HINTS LOCKED
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed max-w-xl">
+                      Controls whether contestants can access and unlock Tier 1 & Tier 2 hints in the Arena. When locked, contestants see <em>"Intel locked by competition organizers for this phase."</em>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <button
+                      onClick={() => handleBulkToggleHints(true)}
+                      disabled={loading}
+                      className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                    >
+                      <Unlock className="w-3.5 h-3.5" />
+                      <span>RELEASE ALL HINTS</span>
+                    </button>
+                    <button
+                      onClick={() => handleBulkToggleHints(false)}
+                      disabled={loading}
+                      className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>LOCK ALL HINTS</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Per-Level Interactive Toggle Badges */}
+                <div className="pt-3 border-t border-slate-100 space-y-2">
+                  <div className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between">
+                    <span>Per-Level Hint Status (Click any badge to toggle live):</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                    {levels.map((lvl) => (
+                      <button
+                        key={lvl.level_id}
+                        type="button"
+                        onClick={() => handleSingleHintToggle(lvl.level_id, !lvl.hint_released)}
+                        className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                          lvl.hint_released
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100 shadow-xs'
+                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                        }`}
+                        title={`Click to ${lvl.hint_released ? 'Lock' : 'Release'} hints for Level ${lvl.level_id}`}
+                      >
+                        <span className="truncate">L{lvl.level_id < 10 ? `0${lvl.level_id}` : lvl.level_id}: {lvl.title}</span>
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                          lvl.hint_released ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {lvl.hint_released ? 'ON' : 'OFF'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Winner Ceremony Mode Controller */}

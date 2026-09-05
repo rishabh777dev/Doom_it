@@ -245,6 +245,14 @@ export const apiToggleHintRelease = async (levelId, released) => {
   return handleResponse(res);
 };
 
+export const apiBulkToggleHints = async (released) => {
+  const res = await fetch(`${BASE_URL}/api/admin/hints/bulk-toggle?released=${released}`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+};
+
 export const apiGetAdminSubmissions = async (limit = 2000, teamId = '') => {
   const query = teamId ? `limit=${limit}&team_id=${encodeURIComponent(teamId)}` : `limit=${limit}`;
   const res = await fetch(`${BASE_URL}/api/admin/submissions?${query}`, {

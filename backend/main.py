@@ -1457,6 +1457,21 @@ def admin_toggle_hint_release(
     log_audit(db, current_admin.id, "TOGGLE_HINT_RELEASE", f"Set hint for level {id} to {status_str}", request)
     return {"level_id": id, "hint_released": level.hint_released}
 
+@app.post("/api/admin/hints/bulk-toggle")
+def admin_bulk_toggle_hints(
+    released: bool,
+    request: Request,
+    current_admin: Team = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    levels = db.query(Level).all()
+    for lvl in levels:
+        lvl.hint_released = released
+    db.commit()
+    status_str = "released" if released else "locked"
+    log_audit(db, current_admin.id, "BULK_TOGGLE_HINTS", f"Set all level hints to {status_str}", request)
+    return {"success": True, "released": released, "count": len(levels)}
+
 @app.get("/api/admin/submissions", response_model=List[AdminSubmissionLog])
 def admin_list_submissions(
     limit: int = 2000,
