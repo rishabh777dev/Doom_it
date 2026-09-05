@@ -1,10 +1,14 @@
 import React from 'react';
 import { ArrowRight, ChevronDown, HelpCircle, Zap, Shield, Sparkles, Terminal } from 'lucide-react';
+import HeroShaderBackground from './HeroShaderBackground';
 
 export default function HeroSection({ onGetStarted, onOpenRules }) {
   return (
-    <section className="pt-8 pb-14 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="relative -mt-20 min-h-[640px] lg:min-h-[720px] pt-28 pb-24 lg:pt-36 lg:pb-32 flex items-center overflow-hidden border-b border-slate-200/80">
+      {/* Real-time WebGL/WebGPU Stripe & Fluted Glass Shader Background from Emily Project */}
+      <HeroShaderBackground />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
 
           {/* Left Column: Typography & CTAs */}
@@ -61,7 +65,7 @@ export default function HeroSection({ onGetStarted, onOpenRules }) {
               <div className="relative rounded-[2.5rem] border-2 border-slate-900 bg-gradient-to-br from-blue-700 via-sky-600 to-blue-900 p-2 shadow-card overflow-hidden">
                 
                 {/* Embedded High-Impact Graphic Illustration */}
-                <div className="relative w-full h-[420px] rounded-[2.2rem] bg-gradient-to-b from-sky-400 via-blue-600 to-indigo-900 overflow-hidden flex items-center justify-center">
+                <div className="relative w-full h-[440px] lg:h-[470px] rounded-[2.2rem] bg-gradient-to-b from-sky-400 via-blue-600 to-indigo-900 overflow-hidden flex items-center justify-center">
                   
                   {/* Dynamic Abstract Geometry Background */}
                   <div className="absolute inset-0 opacity-25">

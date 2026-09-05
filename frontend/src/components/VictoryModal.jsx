@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trophy, ArrowRight, Sparkles, CheckCircle2, ShieldCheck, Receipt, Target, Lightbulb } from 'lucide-react';
+import { useCountUp } from '../utils/animations';
 
 export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, scoreAwarded, totalScore, scoreBreakdown }) {
   if (!isOpen) return null;
@@ -12,6 +13,10 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
   const hintDeduction = scoreBreakdown?.hint_deduction ?? 0;
   const hintTier = scoreBreakdown?.hint_tier_used ?? 0;
   const netScore = scoreBreakdown?.final_score || scoreAwarded || 100;
+
+  // Smooth count-ups for celebratory feedback
+  const animatedNetScore = useCountUp(netScore, 900, true, 0);
+  const animatedTotalScore = useCountUp(totalScore || netScore, 1100, true, Math.max(0, (totalScore || netScore) - netScore));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fade-in">
@@ -39,7 +44,7 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
         </div>
 
         {/* Banner Titles */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-black uppercase tracking-wider mb-2">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-black uppercase tracking-wider mb-2 animate-badge-pop-in">
           <Sparkles className="w-3.5 h-3.5" />
           Sector Defense Breached!
         </div>
@@ -65,7 +70,7 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
 
           <div className="space-y-2 text-xs">
             {/* 1. Base Score */}
-            <div className="flex items-center justify-between font-medium">
+            <div className="flex items-center justify-between font-medium animate-slide-up-subtle">
               <span className="text-slate-700 flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>Base Challenge Score</span>
@@ -74,7 +79,7 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
             </div>
 
             {/* 2. Attempt Cuts */}
-            <div className="flex items-center justify-between font-medium">
+            <div className="flex items-center justify-between font-medium animate-slide-up-subtle" style={{ animationDelay: '80ms' }}>
               <span className="text-slate-700 flex items-center gap-2">
                 <Target className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>
@@ -88,7 +93,7 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
             </div>
 
             {/* 3. Hint Cuts */}
-            <div className="flex items-center justify-between font-medium">
+            <div className="flex items-center justify-between font-medium animate-slide-up-subtle" style={{ animationDelay: '160ms' }}>
               <span className="text-slate-700 flex items-center gap-2">
                 <Lightbulb className="w-4 h-4 text-rose-500 shrink-0" />
                 <span>
@@ -101,7 +106,7 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
             </div>
 
             {/* Total Bifurcation Calculation Bar */}
-            <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between font-bold text-slate-900">
+            <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between font-bold text-slate-900 animate-slide-up-subtle" style={{ animationDelay: '240ms' }}>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs uppercase tracking-wider text-slate-500">Net Awarded:</span>
                 <span className="text-[11px] font-mono text-slate-600 font-normal">
@@ -109,27 +114,27 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
                 </span>
               </div>
               <span className="font-mono text-emerald-600 text-base font-extrabold">
-                +{netScore} PTS
+                +{animatedNetScore} PTS
               </span>
             </div>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="grid grid-cols-2 gap-3 mb-5 animate-slide-up-subtle" style={{ animationDelay: '300ms' }}>
           <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200">
             <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider mb-0.5">Level Net Score</p>
-            <p className="text-xl font-black text-amber-900 font-mono">+{netScore} <span className="text-[10px] font-bold">PTS</span></p>
+            <p className="text-xl font-black text-amber-900 font-mono">+{animatedNetScore} <span className="text-[10px] font-bold">PTS</span></p>
           </div>
           <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200">
             <p className="text-[10px] font-semibold text-brand-blue uppercase tracking-wider mb-0.5">Total Team Score</p>
-            <p className="text-xl font-black text-slate-900 font-mono">{totalScore || netScore} <span className="text-[10px] font-bold">PTS</span></p>
+            <p className="text-xl font-black text-slate-900 font-mono">{animatedTotalScore} <span className="text-[10px] font-bold">PTS</span></p>
           </div>
         </div>
 
         {/* Next Target Preview Card */}
         {nextLevel ? (
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 mb-5 text-left flex items-center gap-3">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 mb-5 text-left flex items-center gap-3 animate-slide-up-subtle" style={{ animationDelay: '360ms' }}>
             <div className="w-10 h-10 rounded-xl bg-slate-900 overflow-hidden border border-slate-300 shrink-0">
               <img
                 src={`/avatars/${nextLevel.level_id}.jpg`}
@@ -145,7 +150,7 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
             </div>
           </div>
         ) : (
-          <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 mb-5">
+          <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 mb-5 animate-slide-up-subtle" style={{ animationDelay: '360ms' }}>
             <p className="text-xs font-bold text-emerald-800">🏆 All Challenge Levels in this round cleared!</p>
           </div>
         )}
@@ -153,7 +158,7 @@ export default function VictoryModal({ isOpen, onClose, solvedLevel, nextLevel, 
         {/* CTA Button */}
         <button
           onClick={onClose}
-          className="w-full py-3.5 px-6 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all transform active:scale-98 cursor-pointer"
+          className="w-full py-3.5 px-6 rounded-2xl bg-slate-900 hover:bg-slate-800 hover:scale-[1.01] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all transform active:scale-95 cursor-pointer"
         >
           <span>Continue to Challenge Roadmap</span>
           <ArrowRight className="w-4 h-4" />

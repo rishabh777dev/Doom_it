@@ -501,7 +501,7 @@ export default function ArenaPage({ user }) {
                 return (
                   <div
                     key={msg.id || idx}
-                    className={`flex items-end gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
+                    className={`flex items-end gap-3 ${isUser ? 'justify-end' : 'justify-start'} animate-slide-up-subtle`}
                   >
                     {!isUser && (
                       <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden shadow-sm shrink-0 mb-1 flex items-center justify-center">
@@ -574,7 +574,7 @@ export default function ArenaPage({ user }) {
               {/* Dynamic WhatsApp Bouncing-Dots Typing Indicator */}
               {isSubmitting && (
                 <div className="flex items-end gap-3 justify-start animate-fade-in">
-                  <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden shadow-sm shrink-0 mb-1 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden shadow-sm shrink-0 mb-1 flex items-center justify-center ring-2 ring-brand-blue/40 animate-pulse">
                     <img
                       src={`/avatars/${level?.level_id || 1}.jpg`}
                       alt={level?.title || 'Sentinel'}
@@ -586,7 +586,7 @@ export default function ArenaPage({ user }) {
                     <Bot className="w-4 h-4 text-sky-400 hidden" />
                   </div>
                   <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex items-center gap-3">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-brand-blue animate-bounce" style={{ animationDelay: '0ms' }} />
                       <span className="w-2 h-2 rounded-full bg-brand-blue animate-bounce" style={{ animationDelay: '150ms' }} />
                       <span className="w-2 h-2 rounded-full bg-brand-blue animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -621,7 +621,9 @@ export default function ArenaPage({ user }) {
                   <button
                     onClick={() => handleSendMessage()}
                     disabled={isSubmitting || !inputText.trim()}
-                    className="w-10 h-10 rounded-xl bg-brand-blue hover:bg-blue-700 text-white flex items-center justify-center shadow-sm hover:shadow transition-all transform active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 cursor-pointer mb-0.5"
+                    className={`w-10 h-10 rounded-xl bg-brand-blue hover:bg-blue-700 text-white flex items-center justify-center shadow-sm hover:shadow transition-all duration-200 transform active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 cursor-pointer mb-0.5 ${
+                      inputText.trim() && !isSubmitting ? 'hover:scale-105 hover:ring-2 hover:ring-brand-blue/40 shadow-md shadow-brand-blue/25' : ''
+                    }`}
                     title="Send prompt"
                   >
                     {isSubmitting ? (
@@ -709,7 +711,7 @@ export default function ArenaPage({ user }) {
                 <button
                   onClick={handleVerifyPassword}
                   disabled={isVerifying || !capturedPassword.trim() || isViewingArchived}
-                  className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+                  className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 hover:scale-[1.01] active:scale-95 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none cursor-pointer"
                 >
                   {isVerifying ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

@@ -55,10 +55,10 @@ export default function LandingPage({ user, timerState }) {
                 1
               </div>
               <h3 className="font-display font-bold text-lg text-slate-900">
-                Tiered Attempt Scoring
+                Per-Attempt Scoring
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Early solves earn maximum points. Levels 1–3 and 6–8 feature tiered attempt brackets (100, 75, 50 pts). Levels 4, 5, 9, 10, 11, 12 award a flat 100 points upon completion. Total 1,200 points max.
+                Every level awards up to <strong>100 base points</strong>. Your first prompt attempt is penalty-free. Subsequent attempts apply deductions scaled by round tier (<strong>-2 pts</strong> in Round 1, <strong>-3 pts</strong> in Round 2, <strong>-4 pts</strong> in Round 3).
               </p>
             </div>
 
@@ -68,10 +68,10 @@ export default function LandingPage({ user, timerState }) {
                 2
               </div>
               <h3 className="font-display font-bold text-lg text-slate-900">
-                Progressive Hint Degradation
+                2-Tier Tactical Hints
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Facing a stubborn sentinel? Unlocking a tactical hint incurs an escalating penalty (starting at <strong>25 pts</strong> on Level 1, <strong>50 pts</strong> on Level 2, scaling up to <strong>90 pts</strong>).
+                Facing a hardened guardian? Unlock optional intel dossiers: <strong>Tier 1</strong> provides directional defense orientation, while <strong>Tier 2</strong> exposes vulnerability windows (penalties: -15/-30 in R1, -25/-40 in R2, -35/-50 in R3).
               </p>
             </div>
 
@@ -81,10 +81,10 @@ export default function LandingPage({ user, timerState }) {
                 3
               </div>
               <h3 className="font-display font-bold text-lg text-slate-900">
-                15s Cooldown & 6 RPM
+                Live Verification & Sync
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                To prevent automated brute-forcing and promote thoughtful adversarial engineering, submissions are rate-limited to <strong>1 payload every 15 seconds</strong> (max 6 requests per minute).
+                The evaluation judge checks responses in real time. As soon as the classified token or phrase is leaked in the output, your solve is logged, score breakdown is finalized, and the next sentinel unlocks.
               </p>
             </div>
 
@@ -127,28 +127,46 @@ export default function LandingPage({ user, timerState }) {
             
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
               <h4 className="font-display font-bold text-sm text-slate-900">
-                What models are deployed in the arena?
+                How does level clearance and payload validation work?
               </h4>
               <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                The arena connects to a distributed cluster of Meta Llama 3 models, alongside NVIDIA Nemotron and Google Gemini failover routers.
+                When your prompt compels the guardian model to disclose the protected secret token or phrase anywhere in its response, the automated judge immediately flags the level as cleared, awards your score, and unlocks the next challenge.
               </p>
             </div>
 
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
               <h4 className="font-display font-bold text-sm text-slate-900">
-                Can I test prompts before submitting passwords?
+                How does the attempt penalty system work?
               </h4>
               <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Yes! You can transmit prompts to the model and observe the output. Each prompt counts toward your attempt limit for that level.
+                Your first prompt submission on any level incurs zero penalty. Subsequent attempts apply a deduction based on the round's difficulty tier (Round 1: -2 pts, Round 2: -3 pts, Round 3: -4 pts per attempt). Precise, well-crafted payloads will always rank higher than rapid brute forcing.
               </p>
             </div>
 
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
               <h4 className="font-display font-bold text-sm text-slate-900">
-                How does Round 3 work differently from Rounds 1 & 2?
+                How do Tactical Hints affect our team's score?
               </h4>
               <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Round 1 tests single-word password extraction (5 levels). Round 2 tests 3–9 word secret phrase extraction (4 levels). Round 3 tests system prompt extraction (3 levels), challenging contestants to extract the model's deeply protected initialization directives!
+                Each level features a 2-tier intelligence dossier. Tier 1 reveals defensive orientation, while Tier 2 exposes narrow vulnerability windows. Unlocking a hint applies a fixed deduction (Round 1: -15/-30, Round 2: -25/-40, Round 3: -35/-50), so strategize carefully before unlocking.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+              <h4 className="font-display font-bold text-sm text-slate-900">
+                Can multiple team members submit prompts at the same time?
+              </h4>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                Teams operate under a shared team account. To prevent race conditions, duplicate attempt penalties, and session collisions, coordinate payloads with your teammates and transmit from one active terminal.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+              <h4 className="font-display font-bold text-sm text-slate-900">
+                What happens when a round timer expires?
+              </h4>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                Each round is strictly time-bounded. When the timer hits zero, unsolved levels in that round freeze, and all teams advance to the subsequent round. All points earned remain safely locked in your scoreboard standing.
               </p>
             </div>
 

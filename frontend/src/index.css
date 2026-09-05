@@ -63,3 +63,46 @@
 .animate-scale-up {
   animation: scale-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Accessible Super-Style Micro-Animation Keyframes */
+@keyframes slide-up-subtle {
+  0% { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-up-subtle {
+  animation: slide-up-subtle 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes super-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(16, 185, 129, 0.25);
+  }
+}
+
+.animate-super-glow {
+  animation: super-glow-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes badge-pop-in {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-badge-pop {
+  animation: badge-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Accessibility: Respect prefers-reduced-motion across the entire site */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

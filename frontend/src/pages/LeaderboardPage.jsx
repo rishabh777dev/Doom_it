@@ -1,6 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, RefreshCw, Search, Medal, Shield, Sparkles } from 'lucide-react';
+import { Trophy, RefreshCw, Search, Medal, Shield, Sparkles, TrendingUp } from 'lucide-react';
 import { apiGetLeaderboard } from '../services/api';
+import { useScoreboardRankAnimation, useCountUp } from '../utils/animations';
+
+function PodiumScore({ score, isClimbing }) {
+  const animatedScore = useCountUp(score, 700);
+  return (
+    <span className={`font-mono font-extrabold text-2xl text-emerald-600 transition-transform duration-300 ${isClimbing ? 'scale-110 text-emerald-500' : ''}`}>
+      {animatedScore} <span className="text-xs text-slate-400 font-normal">pts</span>
+    </span>
+  );
+}
+
+function ScoreCell({ score, scoreDelta, isClimbing }) {
+  const animatedScore = useCountUp(score, 700);
+  return (
+    <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-600 text-base">
+      <div className="flex items-center justify-end gap-1.5">
+        {scoreDelta > 0 && (
+          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
+            +{scoreDelta}
+          </span>
+        )}
+        <span className={isClimbing ? 'inline-block scale-110 text-emerald-500 transition-transform duration-300' : ''}>
+          {animatedScore} <span className="text-xs text-slate-400 font-normal">pts</span>
+        </span>
+      </div>
+    </td>
+  );
+}
 
 export default function LeaderboardPage({ user }) {
   const [entries, setEntries] = useState([]);
@@ -30,6 +58,7 @@ export default function LeaderboardPage({ user }) {
   );
 
   const topThree = entries.slice(0, 3);
+  const { rowRefs, animationStates } = useScoreboardRankAnimation(filteredEntries, user);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -70,15 +99,27 @@ export default function LeaderboardPage({ user }) {
               { bg: 'bg-orange-100 text-orange-900 border-orange-300', badge: 'bg-orange-400 text-orange-950', label: '3rd Place' },
             ][idx];
 
+            const anim = animationStates[team.team_name];
+            const isClimbing = Boolean(anim?.isClimbing || anim?.hasScored);
+
             return (
               <div
                 key={team.team_name}
-                className={`p-6 rounded-3xl border-2 ${colors.border || 'border-slate-900'} bg-white shadow-card flex flex-col justify-between space-y-4`}
+                className={`p-6 rounded-3xl border-2 ${colors.border || 'border-slate-900'} bg-white shadow-card flex flex-col justify-between space-y-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl relative ${
+                  isClimbing ? 'ring-2 ring-emerald-400 shadow-emerald-400/20 scale-[1.02]' : ''
+                }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${colors.bg}`}>
-                    {colors.label}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${colors.bg}`}>
+                      {colors.label}
+                    </span>
+                    {anim?.rankDelta > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black animate-bounce shadow-sm">
+                        ▲ +{anim.rankDelta}
+                      </span>
+                    )}
+                  </div>
                   <div className={`w-8 h-8 rounded-full ${colors.badge} flex items-center justify-center font-bold text-sm shadow-sm`}>
                     {idx + 1}
                   </div>
@@ -95,9 +136,7 @@ export default function LeaderboardPage({ user }) {
 
                 <div className="pt-3 border-t border-slate-100 flex items-baseline justify-between">
                   <span className="text-xs font-bold text-slate-400 uppercase">Score</span>
-                  <span className="font-mono font-extrabold text-2xl text-emerald-600">
-                    {team.total_score} <span className="text-xs text-slate-400 font-normal">pts</span>
-                  </span>
+                  <PodiumScore score={team.total_score} isClimbing={isClimbing} />
                 </div>
               </div>
             );
@@ -140,15 +179,33 @@ export default function LeaderboardPage({ user }) {
               <tbody className="divide-y divide-slate-100 font-medium">
                 {filteredEntries.map((entry) => {
                   const isCurrent = user?.username && entry.team_name.toLowerCase() === user.username.toLowerCase();
+                  const anim = animationStates[entry.team_name];
+                  const isClimbing = Boolean(anim?.isClimbing || anim?.hasScored);
+
                   return (
                     <tr
-                      key={entry.rank}
-                      className={`transition-colors ${
-                        isCurrent ? 'bg-blue-50/80 font-bold' : 'hover:bg-slate-50'
+                      key={entry.team_name}
+                      ref={(el) => {
+                        if (el) rowRefs.current[entry.team_name] = el;
+                        else delete rowRefs.current[entry.team_name];
+                      }}
+                      className={`transition-colors duration-300 relative ${
+                        isClimbing
+                          ? 'bg-emerald-50/90 font-bold shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400'
+                          : isCurrent
+                          ? 'bg-blue-50/80 font-bold'
+                          : 'hover:bg-slate-50'
                       }`}
                     >
                       <td className="py-3.5 px-3 font-mono font-bold">
-                        #{entry.rank}
+                        <div className="flex items-center gap-1.5">
+                          <span>#{entry.rank}</span>
+                          {anim?.rankDelta > 0 && (
+                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black tracking-tight animate-bounce shadow-sm">
+                              ▲ +{anim.rankDelta}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-3">
@@ -158,6 +215,12 @@ export default function LeaderboardPage({ user }) {
                         {isCurrent && (
                           <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-blue-600 text-white uppercase font-bold">
                             Your Team
+                          </span>
+                        )}
+                        {isClimbing && (
+                          <span className="ml-2 inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase font-black tracking-wider animate-pulse">
+                            <Sparkles className="w-2.5 h-2.5" />
+                            Rank Surge
                           </span>
                         )}
                       </td>
@@ -172,9 +235,7 @@ export default function LeaderboardPage({ user }) {
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-600 text-base">
-                        {entry.total_score} <span className="text-xs text-slate-400 font-normal">pts</span>
-                      </td>
+                      <ScoreCell score={entry.total_score} scoreDelta={anim?.scoreDelta} isClimbing={isClimbing} />
                     </tr>
                   );
                 })}

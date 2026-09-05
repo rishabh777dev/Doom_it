@@ -23,6 +23,18 @@ export default function Navbar({ user, timerState }) {
   const navigate = useNavigate();
   const [muted, setMuted] = useState(isSoundMuted());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  const isLandingPage = location.pathname === '/';
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 15);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -45,7 +57,13 @@ export default function Navbar({ user, timerState }) {
   const homeLink = user ? (user.role === 'ADMIN' ? '/admin/dashboard' : '/levels') : '/';
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 border-b border-slate-200/80 transition-all">
+    <header
+      className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+        isLandingPage && !scrolled
+          ? 'bg-transparent border-b border-transparent'
+          : 'backdrop-blur-md bg-white/85 border-b border-slate-200/80 shadow-sm'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
         {/* Brand Logo */}
@@ -65,9 +83,9 @@ export default function Navbar({ user, timerState }) {
         <nav className="hidden lg:flex items-center gap-1">
           <Link
             to="/rules"
-            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
               isActive('/rules')
-                ? 'bg-blue-50 text-brand-blue'
+                ? 'bg-blue-50 text-brand-blue shadow-sm shadow-blue-500/10'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
             }`}
           >
@@ -79,9 +97,9 @@ export default function Navbar({ user, timerState }) {
             <>
               <Link
                 to="/leaderboard"
-                className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
                   isActive('/leaderboard')
-                    ? 'bg-blue-50 text-brand-blue'
+                    ? 'bg-blue-50 text-brand-blue shadow-sm shadow-blue-500/10'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                 }`}
               >
@@ -90,9 +108,9 @@ export default function Navbar({ user, timerState }) {
               </Link>
               <Link
                 to="/levels"
-                className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
                   isActive('/levels')
-                    ? 'bg-blue-50 text-brand-blue'
+                    ? 'bg-blue-50 text-brand-blue shadow-sm shadow-blue-500/10'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                 }`}
               >
@@ -102,9 +120,9 @@ export default function Navbar({ user, timerState }) {
 
               <Link
                 to="/arena"
-                className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
                   isActive('/arena')
-                    ? 'bg-brand-blue text-white shadow-md shadow-blue-500/20'
+                    ? 'bg-brand-blue text-white shadow-md shadow-blue-500/25'
                     : 'text-brand-blue bg-blue-50 hover:bg-blue-100'
                 }`}
               >
@@ -119,7 +137,7 @@ export default function Navbar({ user, timerState }) {
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Live Timer Pill (Desktop & Tablet) - Positioned cleanly on the right for logged-in teams */}
           {user && (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/90 border border-slate-200/90 shadow-sm">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/90 border border-slate-200/90 shadow-sm transition-all duration-200 hover:bg-white">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 <Clock className="w-3.5 h-3.5 text-brand-blue" />
                 <span className="hidden xl:inline">Clock</span>
@@ -128,7 +146,12 @@ export default function Navbar({ user, timerState }) {
               <div className="font-mono font-bold text-xs sm:text-sm text-slate-900 tracking-tight">
                 {formatTime(timerState?.time_remaining_seconds)}
               </div>
-              <div className={`w-2 h-2 rounded-full ${timerState?.status === 'live' ? 'bg-emerald-500 animate-pulse' : timerState?.status === 'paused' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+              <div className="relative flex items-center justify-center">
+                {timerState?.status === 'live' && (
+                  <span className="absolute w-3.5 h-3.5 rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                )}
+                <div className={`w-2 h-2 rounded-full relative z-10 ${timerState?.status === 'live' ? 'bg-emerald-500' : timerState?.status === 'paused' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+              </div>
               <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 uppercase tracking-wide">
                 {timerState?.status || 'OFFLINE'}
               </span>
@@ -139,10 +162,10 @@ export default function Navbar({ user, timerState }) {
           <button
             onClick={() => setMuted(toggleSoundMuted())}
             title={muted ? "Sound Effects Muted (Click to Unmute)" : "Sound Effects Active (Click to Mute)"}
-            className={`p-2 rounded-xl border transition-colors cursor-pointer ${
+            className={`p-2 rounded-xl border transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer ${
               muted
                 ? 'bg-slate-100 text-slate-400 border-slate-200 hover:text-slate-600'
-                : 'bg-blue-50 text-brand-blue border-blue-200 hover:bg-blue-100'
+                : 'bg-blue-50 text-brand-blue border-blue-200 hover:bg-blue-100 shadow-sm shadow-blue-500/10'
             }`}
           >
             {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -150,14 +173,14 @@ export default function Navbar({ user, timerState }) {
 
           {user ? (
             <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 max-w-[140px] truncate">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 max-w-[140px] truncate hover:bg-slate-200/70 transition-colors">
                 <User className="w-3.5 h-3.5 text-brand-blue shrink-0" />
                 <span className="truncate">{user.username}</span>
               </div>
               <button
                 onClick={handleLogout}
                 title="Log Out"
-                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all duration-150 hover:scale-110 active:scale-90 cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -165,7 +188,7 @@ export default function Navbar({ user, timerState }) {
           ) : (
             <Link
               to="/login"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold text-slate-900 bg-white hover:bg-slate-50 border-2 border-slate-900 rounded-2xl shadow-[2px_2px_0px_#0F172A] hover:shadow-[3px_3px_0px_#0F172A] active:translate-x-[1px] active:translate-y-[1px] transition-all"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold text-slate-900 bg-white hover:bg-slate-50 border-2 border-slate-900 rounded-2xl shadow-[2px_2px_0px_#0F172A] hover:shadow-[3px_3px_0px_#0F172A] hover:-translate-y-0.5 active:translate-x-[1px] active:translate-y-[1px] transition-all duration-150"
             >
               <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Team Sign In</span>
