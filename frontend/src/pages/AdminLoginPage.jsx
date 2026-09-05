@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, User, AlertCircle, RefreshCw, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { apiLogin } from '../services/api';
+import HeroShaderBackground from '../components/HeroShaderBackground';
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('admin');
@@ -36,8 +37,11 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-[85vh] bg-[#F8FAFC] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md bg-white rounded-3xl border-2 border-slate-900 shadow-card p-7 sm:p-9 space-y-6">
+    <div className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-12 overflow-hidden">
+      {/* Real-time WebGL/WebGPU Stripe & Fluted Glass Shader Background */}
+      <HeroShaderBackground />
+
+      <div className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-md rounded-3xl border-2 border-slate-900 shadow-card p-7 sm:p-9 space-y-6">
         
         {/* Header */}
         <div className="text-center space-y-2">

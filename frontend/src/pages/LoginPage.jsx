@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, User, Lock, AlertCircle, RefreshCw, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, AlertCircle, RefreshCw, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { apiLogin } from '../services/api';
+import HeroShaderBackground from '../components/HeroShaderBackground';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -37,14 +38,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md bg-white rounded-3xl border-2 border-slate-900 shadow-card p-7 sm:p-9 space-y-6">
+    <div className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-12 overflow-hidden">
+      {/* Real-time WebGL/WebGPU Stripe & Fluted Glass Shader Background */}
+      <HeroShaderBackground />
+
+      <div className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-md rounded-3xl border-2 border-slate-900 shadow-card p-7 sm:p-9 space-y-6">
         
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-brand-blue text-white flex items-center justify-center mx-auto shadow-md shadow-blue-500/20">
-            <Shield className="w-6 h-6 stroke-[2.5]" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="VakyaBhed Logo"
+            className="w-14 h-14 object-contain rounded-2xl mx-auto drop-shadow-sm"
+          />
           <h2 className="font-display font-extrabold text-2xl text-slate-900">
             Team Sign In
           </h2>
